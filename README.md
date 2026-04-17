@@ -1,0 +1,74 @@
+# System Design Series
+
+A collection of system design projects built from scratch to understand how scalable systems work in practice.
+
+Each project focuses on:
+- architecture design
+- scalability problems
+- trade-offs
+- implementation details
+
+---
+
+## Projects
+
+### Redis System
+In-memory key-value store with TTL, LRU eviction, AOF persistence, and concurrent clients.
+
+[Redis System](./redis-system)
+
+---
+
+### Redis Cluster System
+Distributed Redis with sharding and horizontal scaling.
+
+[Redis Cluster System](./redis-cluster-system)
+
+---
+
+### Autocomplete System
+Prefix search system built using Trie with performance optimizations.
+
+[Search Autocomplete System](./autocomplete-system)
+
+---
+
+### Load Balancer
+Traffic distribution system with multiple routing strategies.
+
+[Load Balancer](./load-balancer)
+
+---
+
+### Caching System
+Implementation of caching strategies used in distributed systems.
+
+[Caching System](./caching-system)
+
+---
+
+## Design Format
+
+Each project follows the same structure:
+
+1. Requirements
+2. High-level design
+3. Deep dive
+4. Bottlenecks
+5. Trade-offs
+
+---
+
+## Goal
+
+Understand how systems evolve from single-machine design to distributed scalable systems.
+
+---
+
+## Recommended Order
+
+1. Redis System
+2. Load Balancer
+3. Autocomplete System
+4. Caching System
+5. Redis Cluster System
