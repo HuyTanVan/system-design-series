@@ -65,10 +65,3 @@ Understand how systems evolve from single-machine design to distributed scalable
 
 ---
 
-## Recommended Order
-
-1. Redis System
-2. Load Balancer
-3. Autocomplete System
-4. Caching System
-5. Redis Cluster System
