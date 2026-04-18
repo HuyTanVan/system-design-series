@@ -1,6 +1,6 @@
 # System Design Series
 
-A collection of system design projects built from scratch to understand how scalable systems work in practice.
+My collection of system design projects built from scratch using **Go/Golang** to understand how scalable systems work in practice.
 
 Each project focuses on:
 - architecture design
