@@ -69,7 +69,7 @@ The **trie**, also known as **prefix tree**, is a tree-based data structure used
 
 4. **Steps to get top k most searched queries**
    <div style="margin-left:3rem">
-      <img src="./images/trie-structure.png" alt="Trie Structure" width="500">
+      <img src="./images/trie-structure.png" alt="Trie Structure" width="600">
    </div>
 
     - Find the prefix
