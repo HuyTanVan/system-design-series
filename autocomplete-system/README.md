@@ -35,7 +35,7 @@ At the high-level, the system is split into two main components:
 
 ### Data Gathering Pipeline
 <div style="margin-left:3rem">
-    <img src="./images/data-gathering.png" alt="Data Gathering" width="600">
+    <img src="./images/data-gathering.png" alt="Data Gathering" width="700">
 </div>
 
 - Aggregates query data from analytics logs and updates the frequency table.
