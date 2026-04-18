@@ -47,7 +47,7 @@ At the high-level, the system is split into two main components:
 ### Query Service
 <div style="margin-left:3rem">
     <img src="./images/frequency-table.png" alt="Frequency Table" width="400">
-    <img src="./images/basic-search-suggestions.png" alt="Search Suggestions" width="360">
+    <img src="./images/basic-search-suggestions.png" alt="Search Suggestions" width="400">
 </div>
 
 - Uses the frequency table from data gathering service.
@@ -61,7 +61,7 @@ At the high-level, the system is split into two main components:
 ## Step 3: Design Deep Dive
 
 ### Trie Data Structure
-The **trie** is a tree-like data structure used to store and retrieve query strings efficiently.
+The **trie**, also known as **prefix tree**, is a tree-based data structure used to store and search a collection of strings efficiently.
 
 #### Key Features
 1. **Compact Storage:** Represents prefixes hierarchically to minimize redundancy.
