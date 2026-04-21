@@ -9,6 +9,11 @@ Autocomplete is also commonly known as predictive search, type-ahead or auto-sug
 - Support only **lowercase English characters**.
 - Fast response time (<100 ms) and scalable.
 
+### Demo UI
+<div style="margin-left:3rem">
+    <img src="./images/UI.png" alt="Data Gathering" width="500">
+    <img src="./images/mock-data.png" alt="Data Gathering" width="500">
+</div>
 ---
 
 ## Step 1: Understanding the Problem

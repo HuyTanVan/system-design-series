@@ -19,12 +19,14 @@
         .item { padding: 10px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
         .item:last-child { border-bottom: none; }
         .item:hover { background: #f9f9f9; }
+        .item { justify-content: space-between; display: flex; align-items: center; }
         .item span { color: #1a6eb5; font-weight: 500; }
+        .item .freq { font-size: 11px; color: #999; margin-left: auto; flex-shrink: 0; }
         #status { margin-top: 12px; font-size: 12px; color: #888; min-height: 18px; }
 
         /* Trie size inline */
         #size-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; padding: 3px 8px; background: #f0f0f0; border: 1px solid #e0e0e0; border-radius: 20px; vertical-align: middle; }
-        #size-value { font-size: 13px; font-weight: 500; color: #444; }
+        #size-value { font-size: 11px; font-weight: 500; color: #444; }
         #size-refresh { font-size: 11px; color: #1a6eb5; cursor: pointer; background: none; border: none; padding: 0; line-height: 1; }
         #size-refresh:hover { text-decoration: underline; }
     </style>
@@ -61,8 +63,9 @@ function highlight(text, query) {
 function showDropdown(results, query) {
     if (!results || results.length === 0) { dropdown.style.display = 'none'; return; }
     dropdown.innerHTML = results.map(r => {
-        const word = r.Word || r;
-        return `<div class="item" data-word="${word}">${highlight(word, query)}</div>`;
+        const word = r.Text || r.Word || r;
+        const freq = r.Frequency != null ? `<span class="freq">${r.Frequency}</span>` : '';
+        return `<div class="item" data-word="${word}"><span class="word">${highlight(word, query)}</span>${freq}</div>`;
     }).join('');
     dropdown.style.display = 'block';
 }
@@ -97,7 +100,7 @@ async function fetchSize() {
         const res = await fetch(`${BASE}/size`);
         const data = await res.json();
         const n = data.size ?? data.count ?? data.Size ?? data;
-        sizeValue.textContent = typeof n === 'number' ? 'size=' + n.toLocaleString() + ' words/phrases' : JSON.stringify(n);
+        sizeValue.textContent = typeof n === 'number' ? 'size=' + n.toLocaleString() + ' words' : JSON.stringify(n);
     } catch(e) {
         sizeValue.textContent = 'unavailable';
     }

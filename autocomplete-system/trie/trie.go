@@ -11,7 +11,7 @@ import (
 
 type Value struct {
 	Text      string
-	frequency int
+	Frequency int
 }
 
 type TrieNode struct {
@@ -53,6 +53,7 @@ func (ac *AutoComplete) Swap(newAc *AutoComplete) {
 	ac.mu.Lock()
 	defer ac.mu.Unlock()
 	ac.Root = newAc.Root
+	ac.size = newAc.size
 }
 func (ac *AutoComplete) Build(path string) error {
 	// 1. Processes aggregated file to map
@@ -95,11 +96,11 @@ func (ac *AutoComplete) insert(text string, count int) {
 	}
 	currentNode.isEnd = true
 	ac.size++
-	t := Value{Text: text, frequency: count}
+	t := Value{Text: text, Frequency: count}
 	for _, node := range traversedNodes {
 		node.topK = append(node.topK, t)
 		sort.Slice(node.topK, func(i, j int) bool {
-			return node.topK[i].frequency > node.topK[j].frequency
+			return node.topK[i].Frequency > node.topK[j].Frequency
 		})
 		if len(node.topK) > ac.k {
 			node.topK = node.topK[:ac.k]

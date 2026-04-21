@@ -6,6 +6,9 @@ hello world
 hello uncle huy
 how to cook pasta
 how to cook rice
+how to cook rice
+how to learn golang
+how to learn golang
 how to learn golang
 how to learn python
 how to cook x
@@ -13,16 +16,12 @@ how to cook x
 how to cook x
 how to cook x
 how to cook x
-how to cook addd
-how to cook dawd
+how to cook x
+how to cook beef
+how to make money
 twitter is down
 twitter login
 twitch streaming
 twitch tv
-go programming
-go programming language
-search engine
-search autocomplete system
-system design
-system design interviews
-how to cook x
+
+how to

@@ -20,12 +20,12 @@ func searchHandler(ac *trie.AutoComplete) http.HandlerFunc {
 			return
 		}
 
-		values := ac.Search(q)
-		fmt.Println(values)
-		results := make([]string, len(values))
-		for i, v := range values {
-			results[i] = v.Text
-		}
+		results := ac.Search(q)
+		// fmt.Println(values)
+		// results := make([]string, len(values))
+		// for i, v := range values {
+		// 	results[i] = v.Text
+		// }
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(results)
