@@ -85,10 +85,10 @@ The **trie**, also known as **prefix tree**, is a tree-based data structure used
    - Limit prefix length to reduce search space as users rarely type a loong search query (say 50).
 
 #### Trie Operations
-1. **Create:** 
+1. **Build:** 
     - Built weekly using aggregated query data.
-    - The source of data is from Analytics Log/DB.
-2. **Update:** Rarely updated in real-time; weekly updates replace old data.
+    - The source of raw data is from Analytics Log/DB.
+2. **Update:** Rarely/not ideally updated in real-time; weekly updates replace old data.
 3. **Delete:** 
       <div style="margin-left:3rem">
          <img src="./images/delete-kv.png" alt="Delete KV" width="500">
@@ -125,9 +125,9 @@ The **trie**, also known as **prefix tree**, is a tree-based data structure used
 ---
 
 ### Data Gathering Pipeline
-In the high-level design, whenever a user types a search query, data is updated in real-time. This appraoch is not practical.
+In the high-level design, whenever a user types a search query, trie is updated in real-time. This approach is not practical.
 - Users may enter billions of queries per day. Updating the trie on every query is not feasible.
-- Top suggestions may not change much one the trie is built.
+- Top K suggestions may not change much once the trie is built.
 
 
 #### Updated Design
@@ -136,9 +136,9 @@ In the high-level design, whenever a user types a search query, data is updated 
    <img src="./images/data-gathering-flow.png" alt="Updated Data Gathering Flow" width="600">
 </div>
 
-1. **Analytics Logs:**
-   - Stores raw query data as logs for weekly aggregation.
-   - Logs are append-only and are not indexed
+1. **Logs:**
+   - Whenever user sends request **/query**, server stores raw query data as logs for daily/weekly aggregation.
+   - Logs are append-only.
 2. **Aggregators:**
    - Process logs into frequency tables, suitable for trie construction.
    - For real-time applications such as Twitter, aggregate data in a shorter time interval.

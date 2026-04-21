@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autocomplete</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #f9f9f9; }
+        #app { padding: 2rem 1rem; max-width: 560px; margin: 0 auto; }
+        h1 { font-size: 22px; font-weight: 500; margin-bottom: 1.5rem; }
+        #search-wrap { position: relative; }
+        #search-row { display: flex; gap: 8px; }
+        #q { flex: 1; height: 40px; font-size: 15px; padding: 0 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; }
+        #q:focus { border-color: #888; }
+        #btn { height: 40px; padding: 0 16px; font-size: 14px; border: 1px solid #ddd; border-radius: 8px; background: white; cursor: pointer; }
+        #btn:hover { background: #f0f0f0; }
+        #dropdown { position: absolute; top: 44px; left: 0; right: 52px; background: white; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; z-index: 10; }
+        .item { padding: 10px 14px; font-size: 14px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        .item:last-child { border-bottom: none; }
+        .item:hover { background: #f9f9f9; }
+        .item span { color: #1a6eb5; font-weight: 500; }
+        #status { margin-top: 12px; font-size: 12px; color: #888; min-height: 18px; }
+
+        /* Trie size inline */
+        #size-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; padding: 3px 8px; background: #f0f0f0; border: 1px solid #e0e0e0; border-radius: 20px; vertical-align: middle; }
+        #size-value { font-size: 13px; font-weight: 500; color: #444; }
+        #size-refresh { font-size: 11px; color: #1a6eb5; cursor: pointer; background: none; border: none; padding: 0; line-height: 1; }
+        #size-refresh:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <h1>Autocomplete<span id="size-badge"><span id="size-value">—</span><button id="size-refresh">↺</button></span></h1>
+    <div id="search-wrap">
+        <div id="search-row">
+            <input id="q" type="text" placeholder="Start typing..." autocomplete="off" />
+            <button id="btn">Search</button>
+        </div>
+        <div id="dropdown" style="display:none"></div>
+    </div>
+    <div id="status"></div>
+</div>
+<script>
+const input = document.getElementById('q');
+const btn = document.getElementById('btn');
+const dropdown = document.getElementById('dropdown');
+const status = document.getElementById('status');
+const sizeValue = document.getElementById('size-value');
+const sizeRefresh = document.getElementById('size-refresh');
+const BASE = 'http://localhost:8080';
+let timer = null;
+
+function highlight(text, query) {
+    if (!query) return text;
+    const idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return text;
+    return text.slice(0, idx) + '<span>' + text.slice(idx, idx + query.length) + '</span>' + text.slice(idx + query.length);
+}
+
+function showDropdown(results, query) {
+    if (!results || results.length === 0) { dropdown.style.display = 'none'; return; }
+    dropdown.innerHTML = results.map(r => {
+        const word = r.Word || r;
+        return `<div class="item" data-word="${word}">${highlight(word, query)}</div>`;
+    }).join('');
+    dropdown.style.display = 'block';
+}
+
+async function doSearch(q) {
+    if (!q) { dropdown.style.display = 'none'; return; }
+    try {
+        const res = await fetch(`${BASE}/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        showDropdown(data, q);
+        status.textContent = `${(data || []).length} suggestions`;
+    } catch(e) {
+        status.textContent = 'server unreachable';
+    }
+}
+
+async function doQuery(q) {
+    if (!q) return;
+    try {
+        await fetch(`${BASE}/query`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q })
+        });
+        status.textContent = `logged: "${q}"`;
+    } catch(e) {}
+}
+
+async function fetchSize() {
+    sizeValue.textContent = '…';
+    try {
+        const res = await fetch(`${BASE}/size`);
+        const data = await res.json();
+        const n = data.size ?? data.count ?? data.Size ?? data;
+        sizeValue.textContent = typeof n === 'number' ? 'size=' + n.toLocaleString() + ' words/phrases' : JSON.stringify(n);
+    } catch(e) {
+        sizeValue.textContent = 'unavailable';
+    }
+}
+
+input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (!q) { dropdown.style.display = 'none'; status.textContent = ''; return; }
+    timer = setTimeout(() => doSearch(q), 300);
+});
+
+input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') dropdown.style.display = 'none';
+});
+
+dropdown.addEventListener('click', e => {
+    const item = e.target.closest('.item');
+    if (!item) return;
+    const word = item.dataset.word;
+    input.value = word;
+    dropdown.style.display = 'none';
+    doQuery(word);
+});
+
+btn.addEventListener('click', () => {
+    const q = input.value.trim();
+    if (!q) return;
+    dropdown.style.display = 'none';
+    doSearch(q);
+    doQuery(q);
+});
+
+document.addEventListener('click', e => {
+    if (!document.getElementById('search-wrap').contains(e.target)) {
+        dropdown.style.display = 'none';
+    }
+});
+
+sizeRefresh.addEventListener('click', fetchSize);
+fetchSize();
+</script>
+</body>
+</html>
