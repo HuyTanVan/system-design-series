@@ -1,6 +1,6 @@
 # System Design Series
 
-A collection of system design projects built from scratch to understand how scalable systems work in practice.
+My collection of system design projects built from scratch using **Go/Golang** to understand how scalable systems work in practice.
 
 Each project focuses on:
 - architecture design
@@ -65,10 +65,3 @@ Understand how systems evolve from single-machine design to distributed scalable
 
 ---
 
-## Recommended Order
-
-1. Redis System
-2. Load Balancer
-3. Autocomplete System
-4. Caching System
-5. Redis Cluster System
