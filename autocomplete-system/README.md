@@ -88,21 +88,20 @@ The **trie**, also known as **prefix tree**, is a tree-based data structure used
 
         <img src="./images/cached-trie.png" alt="Cached Trie" width="600">
 
-   - Limit prefix length to reduce search space as users rarely type a loong search query (say 50).
+   - Limit prefix length to reduce search space as users rarely type a long search query (e.g., 30).
 
 #### Trie Operations
 1. **Build:** 
-    - Built weekly using aggregated query data.
-    - The source of raw data is from Analytics Log/DB.
-2. **Update:** Rarely/not ideally updated in real-time; weekly updates replace old data.
+    - Built daily/weekly using aggregated query data.
+    - Raw data(user's queries) are saved to Log/DB.
+2. **Update/Re-build:** Rarely/not ideally updated in real-time; weekly updates replace old data.
 3. **Delete:** 
       <div style="margin-left:3rem">
          <img src="./images/delete-kv.png" alt="Delete KV" width="500">
       </div>
 
-    - Filters remove unwanted or harmful suggestions (e.g., hate speech).
-    - Having a filter layer gives us the flexibility of removing results based on different filter rules.
-    - Unwanted suggestions are removed physically from the database asynchronically.
+    - Filter layer: removes unwanted/harmful suggestions (e.g., profanity, banned terms)
+    - Async cleanup: invalid suggestions are removed from DB asynchronously (offline job)
     
 
 ---
