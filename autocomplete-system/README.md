@@ -70,20 +70,20 @@ At the high-level, the system is split into two main components:
 The **trie**, also known as **prefix tree**, is a tree-based data structure used to store and search a collection of strings efficiently.
 
 #### Key Features
-1. **Compact Storage:** Represents prefixes hierarchically to minimize redundancy.
-2. **Frequency Information:** Stores the popularity of queries at each node.
+1. **Prefix storage:** hierarchical, shared prefixes reduce redundancy.
+2. **Frequency tracking:** Stores the popularity of queries at each node(for ranking).
 
-4. **Steps to get top k most searched queries**
+3. **Steps to get top k most searched queries**
+    - Traverse to prefix node.
+    - Traverse the subtree starting from the prefix node to get all valid children.
+    - Sort the children by **popularity** and get top k .
+
    <div style="margin-left:3rem">
       <img src="./images/trie-structure.png" alt="Trie Structure" width="600">
    </div>
 
-    - Find the prefix
-    - Traverse the subtree from prefix node to get all valid children
-    - Sort the children and get top k 
 
-
-3. **Optimizations:**
+4. **Optimizations:**
    - Cache top-k queries at each node to speed up retrieval and avoid traversing the whole trie.
 
         <img src="./images/cached-trie.png" alt="Cached Trie" width="600">
