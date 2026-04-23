@@ -19,13 +19,6 @@ In-memory key-value store with TTL, LRU eviction, AOF persistence, and concurren
 
 ---
 
-### Redis Cluster System
-Distributed Redis with sharding and horizontal scaling.
-
-[Redis Cluster System](./redis-cluster-system)
-
----
-
 ### Autocomplete System
 Prefix search system built using Trie with performance optimizations.
 
