@@ -52,10 +52,11 @@ Implementation of caching strategies used in distributed systems.
 Each project follows the same structure:
 
 1. Requirements
-2. High-level design
-3. Deep dive
-4. Bottlenecks
-5. Trade-offs
+2. Core Entities
+3. API or Interface
+4. Data flow + High-level design
+5. Deep dive
+6. Future Improvements
 
 ---
 
