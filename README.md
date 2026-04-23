@@ -1,6 +1,6 @@
 # System Design Series
 
-My collection of system design projects built from scratch using **Go/Golang** to understand how scalable systems work in practice.
+My collection of system design projects built from scratch using **Go/Golang** to understand how scalable systems work in practice. I use the [System Design Framwork - HelloInterview](https://www.hellointerview.com/learn/system-design/in-a-hurry/delivery) to keep designs clean and structured. 
 
 Each project focuses on:
 - architecture design
@@ -16,13 +16,6 @@ Each project focuses on:
 In-memory key-value store with TTL, LRU eviction, AOF persistence, and concurrent clients.
 
 [Redis System](./redis-system)
-
----
-
-### Redis Cluster System
-Distributed Redis with sharding and horizontal scaling.
-
-[Redis Cluster System](./redis-cluster-system)
 
 ---
 
@@ -52,10 +45,11 @@ Implementation of caching strategies used in distributed systems.
 Each project follows the same structure:
 
 1. Requirements
-2. High-level design
-3. Deep dive
-4. Bottlenecks
-5. Trade-offs
+2. Core Entities
+3. API or Interface
+4. Data flow + High-level design
+5. Deep dive
+6. Future Improvements
 
 ---
 
