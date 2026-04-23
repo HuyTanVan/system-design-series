@@ -55,6 +55,7 @@ Body: { "text": "some text" }
 ### A. Data Flow
 
 #### READ flow
+
 ```
 Clients search → Server finds top K suggestions → Return top K suggestions
 
@@ -63,12 +64,15 @@ Clients search → Server finds top K suggestions → Return top K suggestions
 ```
 
 #### WRITE flow
+
 ```
+
 Clients select a suggestion → Server logs the selection to a log DB
 
 ![Write Flow](./images/write-flow.png)
 
 ```
+
 ---
 
 ## 5. Key Components
