@@ -50,33 +50,23 @@ Body: { "text": "some text" }
 
 ---
 
-## 4. Data Flow + High Level Design
+## 4. Data Flow[Optional] + High Level Design
 
-### READ Path
+### A. Data Flow
+
+#### READ flow
 ```
-Client (debounced 300-500ms)
-    → Load Balancer
-        → Trie Server (in-memory)
-            → Traverse trie to prefix node
-            → Return precomputed top 5 at that node
-        ← top 5 suggestions
-    ← render suggestions
+Clients search → Server finds top K suggestions → Return top K suggestions
+
+![Read Flow](./images/read-flow.png)
+
 ```
 
-### WRITE Path
+#### WRITE flow
 ```
-User clicks a suggestion
-    → POST /api/query
-        → API Server
-            → Publish event to Kafka
-                → Batch Job (runs daily)
-                    → Aggregate frequencies
-                    → Rebuild trie
-                    → Serialize trie → upload to S3
-                        → Trie Servers (background polling)
-                            → Download new snapshot from S3
-                            → Deserialize → swap trie (double buffer)
-```
+Clients select a suggestion → Server logs the selection to a log DB
+
+![Write Flow](./images/write-flow.png)
 
 ---
 
