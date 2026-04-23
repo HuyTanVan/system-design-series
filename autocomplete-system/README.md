@@ -56,22 +56,19 @@ Body: { "text": "some text" }
 
 #### READ flow
 
-```
 Clients search → Server finds top K suggestions → Return top K suggestions
 
-![Read Flow](./images/read-flow.png)
+<div style="margin-left:3rem">
+    <img src="./images/read-flow.png" alt="Read Flow" width="600">
+</div>
 
-```
+
 
 #### WRITE flow
 
-```
-
-Clients select a suggestion → Server logs the selection to a log DB
-
-![Write Flow](./images/write-flow.png)
-
-```
+<div style="margin-left:3rem">
+    <img src="./images/write-flow.png" alt="Write Flow" width="600">
+</div>
 
 ---
 
