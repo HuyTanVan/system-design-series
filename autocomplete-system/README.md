@@ -1,187 +1,178 @@
-# Search Autocomplete System
+# Search Autocomplete System Design
 
-## Introduction
-Autocomplete is also commonly known as predictive search, type-ahead or auto-suggest, provides real-time suggestions to users as they type in search boxes. The system must efficiently return top-k relevant and popular suggestions based on historical query data for each prefix input.
-
-### Key Features
-- Suggest up to **K autocomplete results**.(K is configurable, typically small like 5–10. I'll set to 5 in this design.)
-- Top k suggestions are built based on **query popularity** (frequency).
-- Support only **lowercase English characters**.
-- Fast response time (<100 ms) and scalable.
-
-### Demo UI
-<div style="margin-left:3rem">
-    <img src="./images/ui.png" alt="Data Gathering" width="500" height="400">
-    <img src="./images/mock-data.png" alt="Data Gathering" width="500" height="400">
-</div>
+## Overview
+Design a search autocomplete (typeahead) system that serves top K suggestions as users type, supporting 100M DAU and 50,000 QPS at peak.
+Autocomplete is also commonly known as predictive search, type-ahead, or auto-suggest, provides real-time suggestions to users as they type in search boxes. The system must efficiently return top-k relevant and popular suggestions based on historical query data for each prefix input.
 
 ---
 
-## Step 1: Understanding the Problem
+## 1. Requirements
 
-### Requirements
-1. **Real-Time Suggestions:** Display relevant matches as the user types.
-2. **Top-k Results:** Return up to 5 results sorted by popularity.
-3. **Scalability:** Handle **10 million DAU** with a peak QPS of **48,000**.
-4. **High Availability:** Handle failures without system downtime.
-5. **Data Growth:** Support daily storage growth of **0.4 GB** for new query data.
+### Functional Requirements
+1. Users should be able to query **top K suggestions** based on a typed prefix (K is configurable, default K=5)
+2. The system should **update the popularity** of words/phrases based on actual user search clicks
 
----
+### Non-Functional Requirements
+1. **Low latency** — suggestions must appear in < 100ms
+2. **Scalability** — support 100M DAU with peak traffic of 50,000 QPS
+3. **High availability** — system should be highly available, prioritizing availability over consistency
+4. **Content moderation** — system should support removal of harmful words/phrases
+5. **Stale data is acceptable** — suggestions can be up to 24 hours old (batch updates)
 
-## Step 2: High-Level Design
-At the high-level, the system is split into two main components:
-1. **Data Gathering Pipeline:** 
-    - Collects user queries in real time and periodically aggregates them for frequency analysis.
-    - Real-time processing is not ideal for large data sets. Instead, the system updates autocomplete data periodically during off-peak hours such as daily or weekly batch updates.
-
-
-2. **Query Service:** Provides the top-k suggestions based on the user’s input.
+### Capacity Estimation
+- 100M DAU × 10 searches/day = ~1,150 QPS average
+- ~4-5x peak multiplier → **~50,000 QPS peak** ✅
 
 ---
 
-### Data Gathering Pipeline
-<div style="margin-left:3rem">
-    <img src="./images/data-gathering.png" alt="Data Gathering" width="700">
-</div>
+## 2. Core Entities
 
-- Aggregates query data from analytics logs and updates the frequency table.
-- Processes historical data daily/weekly to build a **trie** (prefix tree).
-
-
-
-
-### Query Service
-<div style="margin-left:3rem">
-    <img src="./images/frequency-table.png" alt="Frequency Table" width="400">
-    <img src="./images/basic-search-suggestions.png" alt="Search Suggestions" width="400">
-</div>
-
-- Uses the frequency table from data gathering service.
-- Processes user input and retrieves top-k suggestions from the frequency table using a Trie.
-- Optimized for fast lookups using caching and efficient data structures.
-- For example when a user types “tw” in the search box, the following top 5 searched queries are displayed.
-
+| Entity | Fields |
+|--------|--------|
+| **SearchTerm** | `phrase` (string), `frequency` (int) |
 
 ---
 
-## Step 3: Design Deep Dive
+## 3. API Design
+
+### Read — Get top K suggestions
+```
+GET /api/search?q={prefix}
+Response: string[]   // top 5 suggestions
+```
+
+### Write — Log a user selection
+```
+POST /api/query
+Body: { "text": "some text" }
+```
+> Called when a user actually **clicks** a suggestion, not on every keystroke.
+
+---
+
+## 4. Data Flow + High Level Design
+
+### READ Path
+```
+Client (debounced 300-500ms)
+    → Load Balancer
+        → Trie Server (in-memory)
+            → Traverse trie to prefix node
+            → Return precomputed top 5 at that node
+        ← top 5 suggestions
+    ← render suggestions
+```
+
+### WRITE Path
+```
+User clicks a suggestion
+    → POST /api/query
+        → API Server
+            → Publish event to Kafka
+                → Batch Job (runs daily)
+                    → Aggregate frequencies
+                    → Rebuild trie
+                    → Serialize trie → upload to S3
+                        → Trie Servers (background polling)
+                            → Download new snapshot from S3
+                            → Deserialize → swap trie (double buffer)
+```
+
+---
+
+## 5. Key Components
 
 ### Trie Data Structure
-The **trie**, also known as **prefix tree**, is a tree-based data structure used to store and search a collection of strings efficiently.
+- Stored **in-memory** on trie servers for fast prefix lookups
+- Each node **precomputes and caches the top 5 suggestions** at that node
+  - Eliminates need for DFS(Depth-first Search) + sort(to get top K) on every request
+  - Tradeoff: higher memory usage (~1GB for 10M nodes × 100 bytes per node)
+- Lookups are O(prefix length) — extremely fast
 
-#### Key Features
-1. **Compact Storage:** Represents prefixes hierarchically to minimize redundancy.
-2. **Frequency Information:** Stores the popularity of queries at each node.
+### Horizontal Scaling of Trie Servers
 
-4. **Steps to get top k most searched queries**
-   <div style="margin-left:3rem">
-      <img src="./images/trie-structure.png" alt="Trie Structure" width="600">
-   </div>
+- Multiple trie servers sit behind a **load balancer**
+- All servers hold identical trie data
+- New versions of the trie are distributed via S3 polling (see Trie Updates below)
 
-    - Find the prefix
-    - Traverse the subtree from prefix node to get all valid children
-    - Sort the children and get top k 
+<!-- ### Kafka (Write Buffer)
+- Every user selection event is published to **Kafka**
+- Kafka persists messages to disk across multiple brokers
+- Provides both **fault tolerance** and **durability** for the write pipeline
+- Decouples high-volume write traffic from the aggregation pipeline -->
 
+### Batch Aggregation Job (Spark / Hadoop)
+- Runs **periodically (daily or weekly)**
+- Reads events from Kafka
+- Aggregates frequency counts per phrase
+- Rebuilds the full new trie with precomputed top K at each node
+- Serializes the new trie to a file (e.g. JSON or Protobuf) → uploads to **S3**
 
-3. **Optimizations:**
-   - Cache top-k queries at each node to speed up retrieval and avoid traversing the whole trie.
+### Trie Distribution via S3
+- S3 acts as centralized, durable storage for trie snapshots
+- Each trie server runs a **background polling thread**
+- On detecting a new snapshot → downloads → deserializes → performs **double-buffer swap**
 
-        <img src="./images/cached-trie.png" alt="Cached Trie" width="600">
-
-   - Limit prefix length to reduce search space as users rarely type a loong search query (say 50).
-
-#### Trie Operations
-1. **Build:** 
-    - Built weekly using aggregated query data.
-    - The source of raw data is from Analytics Log/DB.
-2. **Update:** Rarely/not ideally updated in real-time; weekly updates replace old data.
-3. **Delete:** 
-      <div style="margin-left:3rem">
-         <img src="./images/delete-kv.png" alt="Delete KV" width="500">
-      </div>
-
-    - Filters remove unwanted or harmful suggestions (e.g., hate speech).
-    - Having a filter layer gives us the flexibility of removing results based on different filter rules.
-    - Unwanted suggestions are removed physically from the database asynchronically.
-    
-
----
-
-### Query Processing Flow
-1. **Prefix Search:**
-   - Identify the prefix node corresponding to the user’s input.
-   - Traverse the subtree to collect valid suggestions.
-2. **Top-k Sorting:**
-   - Cache top-k suggestions at each node to minimize sorting overhead.
-3. **Response Construction:**
-   - Construct results using cached data for fast response times.
+### Double Buffer Swap
+- Each trie server normally maintains **one active trie** in memory
+- When a new snapshot is detected on S3, a background worker builds a **new trie** alongside the active one
+<!-- - During rebuild, memory usage **temporarily doubles** (~2x) as both tries(old and new) coexist in memory
+- On completion → **atomically swap pointer** (microseconds, negligible latency impact)
+- Old trie is dereferenced and **garbage collected**, memory returns to normal
+- Reads continue uninterrupted on the active trie during the entire process
+- **Hardware note:** provision instances with sufficient memory such that 
+the active trie uses ~25-35% of total memory under normal operation, 
+allowing the temporary 2x spike during rebuild to stay within ~50-70% — 
+well below the critical threshold. -->
 
 ---
 
-### Optimizations
-1. **Cache at Each Node:**
-   - Store the top-k queries to avoid redundant traversals.
-2. **Limit Prefix Length:**
-   - Cap prefix length to a small value (e.g., 50 characters) for faster lookups.
-3. **AJAX Requests:**
-   - Use lightweight asynchronous requests for real-time responses.
-4. **Browser Caching:**
-   - Save autocomplete results in the browser cache for frequently searched terms.
+## 6. Deep Dives
+
+### Trie Update Pipeline — Two Approaches
+
+**Option A: Batch job serializes full trie → S3**
+- Batch machine does all the heavy computation (aggregate + build + serialize)
+- Trie servers only deserialize and swap
+- Pro: Less CPU load on production trie servers
+
+**Option B: Batch job outputs key-value (phrase: frequency) → S3**
+- Trie servers download key-value data and build trie themselves
+- Pro: Smaller S3 payload, trie build logic stays in one place
+- Con: Each of N trie servers builds the trie independently — N times the CPU cost
+
+**Recommendation:** Option A is preferred when trie servers are under high read load (50k QPS). Offload the heavy lifting to the batch machine.
+
+### Handling Harmful Words
+- A dedicated team maintains a **blocklist** of harmful words/phrases
+- During trie build, any phrase matching the blocklist is **skipped**
+- Future improvement: integrate an **ML classifier** to automatically flag harmful content before it enters the pipeline
+
+### New Words
+- Brand new words (e.g. a trending topic) are automatically handled by the pipeline:
+  - User searches it → logged to Kafka → aggregated in next batch run → added to trie
+  - Tradeoff: new words won't appear as suggestions until next rebuild (accepted)
+
+### Client-Side Optimization — Debouncing
+- Client waits **300-500ms** after the user stops typing before sending a request
+- Prevents a request on every single keystroke
+- Reduces effective QPS significantly (potentially 50-70% reduction)
+
+### Fault Tolerance
+- **Trie servers go down?** → Load balancer routes to healthy servers; new servers spin up and pull latest snapshot from S3
+- **Kafka broker goes down?** → Kafka replicates across multiple brokers; no data loss
+- **Batch job fails?** → Trie servers continue serving the previous snapshot from memory; stale but functional
+- **Overall** -> servers remain highly available, data is backed up in a trusted storage system (S3) for recovery
 
 ---
 
-### Data Gathering Pipeline
-In the high-level design, whenever a user types a search query, trie is updated in real-time. This approach is not practical.
-- Users may enter billions of queries per day. Updating the trie on every query is not feasible.
-- Top K suggestions may not change much once the trie is built.
+## 7. Architecture Summary
 
+```
 
-#### Updated Design
+an image
 
-<div style="margin-left:3rem">
-   <img src="./images/data-gathering-flow.png" alt="Updated Data Gathering Flow" width="600">
-</div>
-
-1. **Logs:**
-   - Whenever user sends request **/query**, server stores raw query data as logs for daily/weekly aggregation.
-   - Logs are append-only.
-2. **Aggregators:**
-   - Process logs into frequency tables, suitable for trie construction.
-   - For real-time applications such as Twitter, aggregate data in a shorter time interval.
-   - For other cases, aggregating data less frequently, say once per week is good enough.
-3. **Workers:**
-   - Asynchronous servers rebuild the trie and store it in persistent storage.
-4. **Storage Options:**
-    - **Trie Cache**: Trie Cache is a distributed cache system that keeps trie in memory for fast read.
-    - **Trie DB** 
-        1. **Document Store (e.g., MongoDB)**: Since a new trie is built weekly, we can periodically take a snapshot of it, serialize it, and store the serialized data in the database like MongoDB
-        2. **Key-Value Store:** 
-            - Maps prefixes to node data for fast access.
-            - Every prefix in the trie is mapped to a key in a hash table.
-            - Data on each trie node is mapped to a value in a hash table.
-
-                <img src="./images/trie-db.png" alt="Trie DB" width="600">
----
-
-### Scalability
-1. **Sharding:**
-   - Distribute trie nodes across servers based on prefix ranges (e.g., `a-m`, `n-z`).
-   - Further shard within prefixes to balance uneven distributions (e.g., `aa-ag`, `ah-an`).
-2. **Load Balancing:**
-   <div style="margin-left:3rem">
-      <img src="./images/sharding.png" alt="Sharding" width="400">
-   </div>
-
-   - Use a shard map manager to route requests to the appropriate server.
-
+```
 
 ---
 
-## Step 4: Advanced Features
-
-### Multi-Language Support
-1. **Unicode Characters:** Use Unicode to support non-English languages.
-2. **Country-Specific Tries:** Build separate tries for different countries or regions.
-
-### Trending Queries
-- Handle real-time events by dynamically updating trie nodes or weighting recent queries more heavily.
