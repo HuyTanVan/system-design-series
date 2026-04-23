@@ -68,6 +68,7 @@ Clients select a suggestion → Server logs the selection to a log DB
 
 ![Write Flow](./images/write-flow.png)
 
+```
 ---
 
 ## 5. Key Components
