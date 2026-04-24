@@ -5,7 +5,7 @@ Design a search autocomplete (typeahead) system that serves top K suggestions as
 Autocomplete is also commonly known as predictive search, type-ahead, or auto-suggest, provides real-time suggestions to users as they type in search boxes. The system must efficiently return top-k relevant and popular suggestions based on historical query data for each prefix input.
 
 <div style="margin-left:3rem">
-    <img src="./images/uiw.png" alt="UI" width="600">
+    <img src="./images/ui.png" alt="UI" width="600">
 </div>
 
 ---
