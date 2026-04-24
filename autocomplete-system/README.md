@@ -6,7 +6,7 @@ Autocomplete is also commonly known as predictive search, type-ahead, or auto-su
 
 <div style="margin-left:3rem">
     <img src="./images/ui.png" alt="UI" width="600">
-    <img src="./images/mock-data.png" alt="Mock Data" height="500" width="400">
+    <img src="./images/mock-data.png" alt="Mock Data" height="400" width="400">
 </div>
 
 ---
