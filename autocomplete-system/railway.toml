@@ -1,0 +1,5 @@
+[build]
+  dockerfilePath = "docker/api.Dockerfile"
+
+[deploy]
+  startCommand = "./api"
