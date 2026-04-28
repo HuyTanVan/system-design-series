@@ -26,6 +26,6 @@ primary_region = "iad"
   min_machines_running = 0
 
 [[vm]]
-  cpu_kind = "dedicated"
+  cpu_kind = "performance"
   cpus = 2
   memory = "4gb"
