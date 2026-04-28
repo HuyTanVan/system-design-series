@@ -6,7 +6,7 @@ primary_region = "iad"
   dockerfile = "docker/api.Dockerfile"
 
 [env]
-  API_PORT = "8080"
+  API_PORT = ":8080"
   TOP_K = "5"
   REBUILD_INTERVAL = "24h"
 

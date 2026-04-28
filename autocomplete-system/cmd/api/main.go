@@ -35,5 +35,5 @@ func main() {
 	api.SetupRoutes(r, h)
 
 	log.Printf("API server running on %s", cfg.APIPort)
-	r.Run(":", cfg.APIPort)
+	r.Run(cfg.APIPort)
 }
