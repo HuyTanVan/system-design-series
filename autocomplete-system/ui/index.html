@@ -50,7 +50,10 @@ const dropdown = document.getElementById('dropdown');
 const status = document.getElementById('status');
 const sizeValue = document.getElementById('size-value');
 const sizeRefresh = document.getElementById('size-refresh');
-const BASE = 'http://localhost:8080';
+//const BASE = 'http://localhost:8080';
+// const BASE = 'https://autocomplete.fly.dev';
+const BASE = window.location.origin;
+
 let timer = null;
 
 function highlight(text, query) {
