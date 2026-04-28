@@ -3,7 +3,10 @@ package main
 import (
 	"autocomplete/internal/api"
 	"autocomplete/internal/config"
+	"autocomplete/internal/events"
+	"autocomplete/internal/kafka"
 	"autocomplete/workers"
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +14,15 @@ import (
 
 func main() {
 	cfg := config.Load()
+	// init producer
+	producer := kafka.NewProducer(
+		cfg.KafkaBootstrapServer,
+		cfg.KafkaAPIKey,
+		cfg.KafkaAPISecret,
+		cfg.KafkaTopic,
+	)
+	fmt.Printf("Kafka bootstrapServer = %q\n", cfg.KafkaBootstrapServer)
+	defer producer.Close()
 
 	// 1. download snapshot from S3
 	log.Println("downloading snapshot from S3...")
@@ -30,8 +42,14 @@ func main() {
 	log.Printf("poller started | interval=%s", cfg.RebuildInterval)
 
 	// 4. setup and serve
+	bus := events.NewEventBus(producer, 10000)
+	bus.Start()
+
 	r := gin.Default()
 	h := api.NewHandler(ac)
+	h.Producer = producer // assign the producer to the handler
+	h.Bus = bus           // assign the event bus to the handler
+
 	api.SetupRoutes(r, h)
 
 	log.Printf("API server running on %s", cfg.APIPort)

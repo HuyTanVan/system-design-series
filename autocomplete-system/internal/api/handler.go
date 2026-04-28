@@ -1,6 +1,8 @@
 package api
 
 import (
+	"autocomplete/internal/events"
+	"autocomplete/internal/kafka"
 	"autocomplete/internal/trie"
 	"net/http"
 
@@ -8,7 +10,9 @@ import (
 )
 
 type Handler struct {
-	Trie *trie.AutoComplete
+	Trie     *trie.AutoComplete
+	Producer *kafka.Producer // write search logs to Kafka
+	Bus      *events.EventBus
 }
 
 func NewHandler(t *trie.AutoComplete) *Handler {
@@ -52,8 +56,8 @@ func (h *Handler) LogSelection(c *gin.Context) {
 		return
 	}
 
-	// TODO: publish to Kafka
-	// for now just log it
+	// NON-BLOCKING
+	h.Bus.Emit(body.Query)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "selection logged",
 	})

@@ -26,7 +26,7 @@ go.work.sum
 
 # env file
 .env
-
+clients.properties
 # Editor/IDE
 # .idea/
 # .vscode/

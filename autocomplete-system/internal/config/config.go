@@ -4,6 +4,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -24,9 +26,16 @@ type Config struct {
 	S3Bucket string
 	S3Region string
 	S3Key    string
+
+	// Kafka (for later)
+	KafkaBootstrapServer string
+	KafkaAPIKey          string
+	KafkaAPISecret       string
+	KafkaTopic           string
 }
 
 func Load() *Config {
+	godotenv.Load()
 	return &Config{
 		// Server
 		APIPort: getEnv("API_PORT", ":8080"),
@@ -45,6 +54,11 @@ func Load() *Config {
 		S3Bucket: getEnv("S3_BUCKET", "trie-snapshots"),
 		S3Region: getEnv("S3_REGION", "us-east-1"),
 		S3Key:    getEnv("S3_KEY", "trie-snapshot-latest.bin"),
+
+		KafkaBootstrapServer: getEnv("KAFKA_BOOTSTRAP_SERVER", ""),
+		KafkaAPIKey:          getEnv("KAFKA_API_KEY", ""),
+		KafkaAPISecret:       getEnv("KAFKA_API_SECRET", ""),
+		KafkaTopic:           getEnv("KAFKA_TOPIC", "search-log"),
 	}
 }
 
