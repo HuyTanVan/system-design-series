@@ -1,0 +1,31 @@
+app = "autocomplete"
+
+primary_region = "iad"
+
+[build]
+  dockerfile = "docker/api.Dockerfile"
+
+[env]
+  API_PORT = "8080"
+  TOP_K = "5"
+  REBUILD_INTERVAL = "24h"
+
+  CLEANED_DATA_PATH = "./data/cleaned-raw-data.txt"
+  PROCESSED_DATA_PATH = "./data/aggregated-data.csv"
+  SNAPSHOT_PATH = "./data/trie-snapshot.bin"
+
+  S3_BUCKET = "trie-snapshots"
+  S3_REGION = "us-east-1"
+  S3_KEY = "trie-snapshot.bin"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 2
+  memory = "1gb"

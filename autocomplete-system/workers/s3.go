@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -52,7 +53,9 @@ func DownloadSnapshot(outputPath, bucket, key, region string) error {
 	if err != nil {
 		return fmt.Errorf("failed to load configuration, %w", err)
 	}
-
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return fmt.Errorf("failed to create data dir: %w", err)
+	}
 	tmpPath := outputPath + ".tmp"
 	f, err := os.Create(tmpPath)
 	if err != nil {
