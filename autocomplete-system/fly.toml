@@ -16,7 +16,7 @@ primary_region = "iad"
 
   S3_BUCKET = "trie-snapshots"
   S3_REGION = "us-east-1"
-  S3_KEY = "trie-snapshot.bin"
+  S3_KEY = "trie-snapshot-latest.bin"
 
 [http_service]
   internal_port = 8080
