@@ -27,7 +27,7 @@ Design a search autocomplete (typeahead) system that serves top K suggestions as
 
 ### Capacity Estimation
 - 100M DAU × 10 searches/day = ~1,150 QPS average
-- ~4-5x peak multiplier → **~50,000 QPS peak** ✅
+- ~4-5x peak multiplier → **~50,000 QPS peak** 
 
 ---
 
@@ -35,7 +35,7 @@ Design a search autocomplete (typeahead) system that serves top K suggestions as
 
 | Entity | Fields |
 |--------|--------|
-| **SearchTerm** | `phrase` (string), `frequency` (int) |
+| **Suggestions** | `phrase` (string), `frequency` (int) |
 
 ---
 
@@ -49,7 +49,7 @@ Response: string[]   // top 5 suggestions
 
 ### Write — Log a user selection
 ```
-POST /api/query
+POST /api/suggestions
 Body: { "text": "some text" }
 ```
 > Called when a user actually **clicks** a suggestion, not on every keystroke.
@@ -85,44 +85,36 @@ Body: { "text": "some text" }
 - Stored **in-memory** on trie servers for fast prefix lookups
 - Each node **precomputes and caches the top 5 suggestions** at that node
   - Eliminates need for DFS(Depth-first Search) + sort(to get top K) on every request
-  - Tradeoff: higher memory usage (~1GB for 10M nodes × 100 bytes per node)
+  - Tradeoff: higher memory usage (~1.6GB for 13M nodes)
 - Lookups are O(prefix length) — extremely fast
 
 ### Horizontal Scaling of Trie Servers
-
 - Multiple trie servers sit behind a **load balancer**
 - All servers hold identical trie data
-- New versions of the trie are distributed via S3 polling (see Trie Updates below)
+- New versions of the trie are distributed via S3 polling (see Trie Rebuild below)
 
-<!-- ### Kafka (Write Buffer)
+### Kafka (Write Buffer)
 - Every user selection event is published to **Kafka**
 - Kafka persists messages to disk across multiple brokers
 - Provides both **fault tolerance** and **durability** for the write pipeline
-- Decouples high-volume write traffic from the aggregation pipeline -->
+- Decouples high-volume write traffic from the aggregation pipeline
 
-### Batch Aggregation Job (Spark / Hadoop)
-- Runs **periodically (daily or weekly)**
-- Reads events from Kafka
-- Aggregates frequency counts per phrase
-- Rebuilds the full new trie with precomputed top K at each node
-- Serializes the new trie to a file (e.g. JSON or Protobuf) → uploads to **S3**
+### Background worker service (rebuild a new Trie)
+- Runs **periodically (daily or weekly)** 
+- Read events log from Kafka broker disk
+- Aggregates word/phrase frequencies into CSV dataset
+- Re-builds a new trie and serializes snapshot
+- Pushes the trie snapshot to AWS S3
 
 ### Trie Distribution via S3
 - S3 acts as centralized, durable storage for trie snapshots
 - Each trie server runs a **background polling thread**
-- On detecting a new snapshot → downloads → deserializes → performs **double-buffer swap**
+- Rebuild stage: On detecting a new snapshot → downloads → deserializes → performs **double-buffer swap**
+- **Note:** Memory usage of a trie server temporarily increase double during **Rebuild stage**
 
 ### Double Buffer Swap
 - Each trie server normally maintains **one active trie** in memory
 - When a new snapshot is detected on S3, a background worker builds a **new trie** alongside the active one
-<!-- - During rebuild, memory usage **temporarily doubles** (~2x) as both tries(old and new) coexist in memory
-- On completion → **atomically swap pointer** (microseconds, negligible latency impact)
-- Old trie is dereferenced and **garbage collected**, memory returns to normal
-- Reads continue uninterrupted on the active trie during the entire process
-- **Hardware note:** provision instances with sufficient memory such that 
-the active trie uses ~25-35% of total memory under normal operation, 
-allowing the temporary 2x spike during rebuild to stay within ~50-70% — 
-well below the critical threshold. -->
 
 ---
 
@@ -130,20 +122,20 @@ well below the critical threshold. -->
 
 ### Trie Update Pipeline — Two Approaches
 
-**Option A: Batch job serializes full trie → S3**
-- Batch machine does all the heavy computation (aggregate + build + serialize)
+**Approach 1: Background job serializes full trie → S3**
+- A seperate machine does all the heavy computation (aggregate + build + serialize)
 - Trie servers only deserialize and swap
-- Pro: Less CPU load on production trie servers
+- Pro: Less CPU load and memory usage on production trie servers
 
-**Option B: Batch job outputs key-value (phrase: frequency) → S3**
+**Approach 2: Background job outputs key-value (phrase: frequency) → S3**
 - Trie servers download key-value data and build trie themselves
 - Pro: Smaller S3 payload, trie build logic stays in one place
 - Con: Each of N trie servers builds the trie independently — N times the CPU cost
 
-**Recommendation:** Option A is preferred when trie servers are under high read load (50k QPS). Offload the heavy lifting to the batch machine.
+**I implmented Approach 1**
 
-### Handling Harmful Words
-- A dedicated team maintains a **blocklist** of harmful words/phrases
+### Handling Harmful Words (in progress)
+- Maintains a **blocklist** of harmful words/phrases
 - During trie build, any phrase matching the blocklist is **skipped**
 - Future improvement: integrate an **ML classifier** to automatically flag harmful content before it enters the pipeline
 
@@ -169,9 +161,13 @@ well below the critical threshold. -->
 
 ```
 
-an image
+<div style="margin-left:3rem">
+    <img src="./images/full-architecture.png" alt="UI" width="800">
+</div>
 
 ```
 
----
+# Resrouces
+[AOL Dataset i use(the dataset includes sensitive words/phrases)][https://www.kaggle.com/datasets/dineshydv/aol-user-session-collection-500k/suggestions]
 
+---

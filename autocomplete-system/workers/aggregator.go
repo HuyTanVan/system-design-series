@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// aggregates a cleaned kaggle dataset (txt file), results in a csv file as Key:Value pairs (phrase, frequency)
 func AggregateData(inputPath, outputPath string) (bool, error) {
 	start := time.Now()
 
@@ -58,53 +59,57 @@ func AggregateData(inputPath, outputPath string) (bool, error) {
 	return true, nil
 }
 
-// // processes the txt file(for a specific kaggle dataset).
-// // clean and convert txt to csv
+// processes the txt file(for a specific kaggle dataset).
+// clean and convert txt to csv
 // build log: 2026/04/24 19:30:22 raw txt file processed successfully | time=21m55.77968602s
-// func ProcessTxtFile(path string) (bool, error) {
-// 	start := time.Now()
-// 	// 1. read the kaggle dataset txt file
-// 	f, err := os.Open(path)
-// 	if err != nil {
-// 		return false, err
-// 	}
-// 	defer f.Close()
-// 	output, err := os.Create("./data/cleaned-raw-data.txt")
-// 	if err != nil {
-// 		return false, err
-// 	}
-// 	defer output.Close()
-// 	scanner := bufio.NewScanner(f)
-// 	scanner.Scan() // skip the header line
-// 	for scanner.Scan() {
-// 		line := strings.TrimSpace(scanner.Text())
-// 		if line == "" {
-// 			continue
-// 		}
+// 2026/04/30 15:54:23 raw txt file processed successfully | records=3614506 | time=17m51.742880406s
+func ProcessTxtFile(path string) (bool, error) {
+	log.Printf("processing kaggle dataset: %s", path)
+	start := time.Now()
+	// 1. read the kaggle dataset txt file
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	output, err := os.Create("./data/cleaned-raw-data.txt")
+	if err != nil {
+		return false, err
+	}
+	defer output.Close()
+	scanner := bufio.NewScanner(f)
+	scanner.Scan() // skip the header line
+	recordCount := 0
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
 
-// 		// 2. extract, clean the data (convert to lowercase, etc.)
-// 		// handle tab
-// 		cols := strings.Split(line, "\t")
-// 		if len(cols) < 2 {
-// 			continue
-// 		}
-// 		// query is in the second column
-// 		query := strings.TrimSpace(cols[1])
-// 		if query == "" {
-// 			continue
-// 		}
+		// 2. extract, clean the data (convert to lowercase, etc.)
+		// handle tab
+		cols := strings.Split(line, "\t")
+		if len(cols) < 2 {
+			continue
+		}
+		// query is in the second column
+		query := strings.TrimSpace(cols[1])
+		if query == "" {
+			continue
+		}
 
-// 		// convert to lowercase
-// 		query = strings.ToLower(query)
+		// convert to lowercase
+		query = strings.ToLower(query)
 
-// 		// 3. write the cleaned data to a new csv file
-// 		fmt.Fprintln(output, query)
+		// 3. write the cleaned data to a new csv file
+		fmt.Fprintln(output, query)
+		recordCount++
 
-// 	}
-// 	if scanner.Err() != nil {
-// 		return false, fmt.Errorf("failed to build: %s", scanner.Err())
-// 	}
-// 	log.Printf("raw txt file processed successfully | time=%s", time.Since(start))
-// 	return true, nil
+	}
+	if scanner.Err() != nil {
+		return false, fmt.Errorf("failed to build: %s", scanner.Err())
+	}
+	log.Printf("raw txt file processed successfully | records=%d | time=%s", recordCount, time.Since(start))
+	return true, nil
 
-// }
+}

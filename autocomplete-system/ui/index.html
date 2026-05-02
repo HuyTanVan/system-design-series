@@ -26,14 +26,21 @@
 
         /* Trie size inline */
         #size-badge { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; padding: 3px 8px; background: #f0f0f0; border: 1px solid #e0e0e0; border-radius: 20px; vertical-align: middle; }
-        #size-value { font-size: 11px; font-weight: 500; color: #444; }
+        #size-value { font-size: 12px; font-weight: 500; color: #444; }
         #size-refresh { font-size: 11px; color: #1a6eb5; cursor: pointer; background: none; border: none; padding: 0; line-height: 1; }
         #size-refresh:hover { text-decoration: underline; }
+
+        #size-badge { font-size: 12px; font-weight: 500; color: #444; }
     </style>
 </head>
 <body>
 <div id="app">
-    <h1>Autocomplete<span id="size-badge"><span id="size-value">—</span><button id="size-refresh">↺</button></span></h1>
+    <h1>Autocomplete<span id="size-badge"><span id="size-value">—</span><button id="size-refresh">↺</button></span>
+    <span id="size-badge">
+    Project's detail:
+    <a id="github-link" href="https://github.com/HuyTanVan/system-design-series/tree/main/autocomplete-system" target="_blank">github</a>
+    </span>
+    </h1>
     <div id="search-wrap">
         <div id="search-row">
             <input id="q" type="text" placeholder="Start typing..." autocomplete="off" />

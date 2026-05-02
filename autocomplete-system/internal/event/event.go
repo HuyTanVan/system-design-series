@@ -1,4 +1,4 @@
-package events
+package event
 
 import (
 	"context"
@@ -7,20 +7,20 @@ import (
 	"autocomplete/internal/kafka"
 )
 
-type EventBus struct {
+type AsyncEventQueue struct {
 	queue    chan string
 	producer *kafka.Producer
 }
 
-func NewEventBus(p *kafka.Producer, bufferSize int) *EventBus {
-	return &EventBus{
+func NewAsyncEventQueue(p *kafka.Producer, bufferSize int) *AsyncEventQueue {
+	return &AsyncEventQueue{
 		queue:    make(chan string, bufferSize),
 		producer: p,
 	}
 }
 
-// Start background worker
-func (b *EventBus) Start() {
+// Start background worker to consume events and publish to Kafka
+func (b *AsyncEventQueue) Start() {
 	go func() {
 		for msg := range b.queue {
 			err := b.producer.Publish(context.Background(), msg)
@@ -32,11 +32,11 @@ func (b *EventBus) Start() {
 }
 
 // Non-blocking send
-func (b *EventBus) Emit(msg string) {
+func (b *AsyncEventQueue) Emit(msg string) {
 	select {
 	case b.queue <- msg:
 	default:
-		// backpressure strategy (drop or log)
+		// backpressure strategy (drop, log or retry)
 		log.Println("event queue full, dropping message")
 	}
 }

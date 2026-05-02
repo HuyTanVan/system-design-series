@@ -15,11 +15,16 @@ func SerializeTrie(ac *trie.AutoComplete, outputPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create snapshot file: %w", err)
 	}
-	defer f.Close()
 
 	encoder := gob.NewEncoder(f)
 	if err := encoder.Encode(ac.Root); err != nil {
+		f.Close()
 		return fmt.Errorf("failed to encode trie: %w", err)
+	}
+
+	// close BEFORE rename
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("failed to close temp file: %w", err)
 	}
 
 	if err := os.Rename(tmpPath, outputPath); err != nil {

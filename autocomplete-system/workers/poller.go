@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// regularly check for new snapshot on AWS S3, if there's a new snapshot, download -> deserialize -> swap with the old Trie
 func StartPoller(ac *trie.AutoComplete, snapshotPath, bucket, key, region string, interval time.Duration) {
 	go func() {
 		for {
