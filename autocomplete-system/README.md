@@ -12,6 +12,13 @@ Design a search autocomplete (typeahead) system that serves top K suggestions as
 
 ---
 
+## Architecture Summary
+<div style="margin-left:3rem">
+    <img src="./images/full-architecture.png" alt="UI" width="1000">
+</div>
+
+---
+
 ## 1. Requirements
 
 ### Functional Requirements
@@ -154,14 +161,6 @@ Body: { "text": "some text" }
 - **Kafka broker goes down?** → Kafka replicates across multiple brokers; no data loss
 - **Batch job fails?** → Trie servers continue serving the previous snapshot from memory; stale but functional
 - **Overall** -> servers remain highly available, data is backed up in a trusted storage system (S3) for recovery
-
----
-
-## 7. Architecture Summary
-
-<div style="margin-left:3rem">
-    <img src="./images/full-architecture.png" alt="UI" width="800">
-</div>
 
 ---
 
