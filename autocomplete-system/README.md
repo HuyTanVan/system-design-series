@@ -159,13 +159,11 @@ Body: { "text": "some text" }
 
 ## 7. Architecture Summary
 
-```
-
 <div style="margin-left:3rem">
     <img src="./images/full-architecture.png" alt="UI" width="800">
 </div>
 
-```
+---
 
 # Resrouces
 [AOL Dataset i use(the dataset includes sensitive words/phrases)][https://www.kaggle.com/datasets/dineshydv/aol-user-session-collection-500k/suggestions]
