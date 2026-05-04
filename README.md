@@ -26,6 +26,11 @@ Prefix search system built using Trie with performance optimizations.
 
 ---
 
+### URL shoterner
+A URL shortener with click analytics, custom aliases, and TTL-based expiry.
+
+[URL Shortener](./url-shortener)
+
 ### Load Balancer
 Traffic distribution system with multiple routing strategies.
 
