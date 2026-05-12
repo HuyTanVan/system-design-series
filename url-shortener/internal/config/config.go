@@ -56,9 +56,6 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// getEnvInt parses an integer environment variable.
-// Returns fallback if the variable is unset; returns an error if it is set
-// but cannot be parsed.
 func getEnvInt(key string, fallback int) (int, error) {
 	v := os.Getenv(key)
 	if v == "" {

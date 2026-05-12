@@ -9,9 +9,13 @@ import (
 	"url-shortener/internal/config"
 	"url-shortener/internal/db"
 	"url-shortener/internal/store"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// 1. laod config
+	godotenv.Load() // load .env in development
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)

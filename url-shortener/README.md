@@ -7,7 +7,6 @@ Design an url shortening service that can convert long URLs to shorter urls (eg.
 
 <div style="margin-left:3rem">
     <img src="./images/ui.png" alt="UI" width="600">
-    <img src="./images/mock-data.png" alt="Mock Data" height="400" width="400">
 </div>
 
 ---
@@ -40,7 +39,7 @@ Design an url shortening service that can convert long URLs to shorter urls (eg.
 
 | Entity | Fields |
 |--------|--------|
-| **URL** | `original_url` (string), `short_url` (string), `user` (int) |
+| **URL** | `original` (string), `short_code` (string), `user` (int) |
 
 ---
 
@@ -56,7 +55,7 @@ Body: {
 }
 Response
 {
-    "short_url": "https://tiny.ly/Ab3kX"
+    "short_code": "https://tiny.ly/Ab3kX"
 }
 ```
 
@@ -94,7 +93,7 @@ Response: Redirects to Original URL
 - Pros: Easy to implement, satisfies 1B shortened URL [**Scalability (1B URLs)**](#non-functional-requirements).
 - Cons: Must check uniqueness on every generation by querying the DB — increases latency and load under high traffic.
 
-#### Approach 2: 
+#### Approach 2: Global counter + Base 62 encoding
 
 ### How can we ensure that users are redirected fast (<200ms) at scale?
 #### Approach 1: Database Indexing - (good but not optimal)
