@@ -4,22 +4,24 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"url-shortener/internal/config"
+	"url-shortener/internal/store"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SetupRoutes(r *gin.Engine, h *Handler) {
-	// middlewares
-	r.Use(CORSMiddleware())
-	r.Use(LoggingMiddleware())
+func NewRouter(s *store.Store, cfg *config.Config) *gin.Engine {
+	r := gin.Default()
 
-	// serve UI
-	r.StaticFile("/", "./ui/index.html")
+	h := NewHandler(s, cfg.BaseURL, cfg.DefaultTTLDays)
 
-	// routes matching old UI
-	r.GET("/url", h.Search)
-	r.POST("/url", h.LogSelection)
-	// r.GET("/size", h.Size)
+	r.StaticFile("/", "./ui/index.html") // serve UI (optional)
+
+	r.POST("/shorten", h.Shorten)
+	r.GET("/stats/:code", h.Stats) // must be before /:code
+	r.GET("/:code", h.Redirect)
+
+	return r
 }
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
