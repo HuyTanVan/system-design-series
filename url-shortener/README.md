@@ -5,6 +5,7 @@ Design an url shortening service that can convert long URLs to shorter urls (eg.
 
 > Example: https://www.domain.com/service/payment/checkout?id=12345 -> https://tiny.ly/Ab3kX
 
+## Demo UI
 <div style="margin-left:3rem">
     <img src="./images/ui.png" alt="UI" width="600">
 </div>
@@ -13,7 +14,7 @@ Design an url shortening service that can convert long URLs to shorter urls (eg.
 
 ## Architecture Summary
 <div style="margin-left:3rem">
-    <img src="./images/full-architecture.png" alt="UI" width="1000">
+    <img src="./images/architecture.png" alt="UI" width="1000">
 </div>
 
 ---
