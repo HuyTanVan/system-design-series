@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>URL Shortener</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .box {
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 480px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 24px;
+      color: #111;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      outline: none;
+      margin-bottom: 12px;
+    }
+
+    input:focus { border-color: #4f46e5; }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    button:hover { background: #4338ca; }
+
+    .result {
+      margin-top: 20px;
+      padding: 14px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .result a {
+      color: #16a34a;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .error {
+      margin-top: 20px;
+      padding: 14px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      color: #dc2626;
+      font-size: 0.9rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>🔗 URL Shortener</h1>
+
+    <input type="text" id="urlInput" placeholder="Paste your long URL here..." />
+    <input type="text" id="aliasInput" placeholder="Custom alias (optional)" />
+    <button onclick="shorten()">Shorten</button>
+
+    <div class="result" id="result">
+      Short URL: <a id="shortLink" href="#" target="_blank"></a>
+    </div>
+
+    <div class="error" id="error"></div>
+  </div>
+
+  <script>
+    async function shorten() {
+      const url = document.getElementById('urlInput').value.trim();
+      const result = document.getElementById('result');
+      const error = document.getElementById('error');
+      const shortLink = document.getElementById('shortLink');
+
+      result.style.display = 'none';
+      error.style.display = 'none';
+
+      if (!url) {
+        error.textContent = 'Please enter a URL.';
+        error.style.display = 'block';
+        return;
+      }
+
+      try {
+        const alias = document.getElementById('aliasInput').value.trim();
+        const body = { url };
+        if (alias) body.alias = alias;
+
+        const resp = await fetch('/url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          error.textContent = data.message || 'Something went wrong.';
+          error.style.display = 'block';
+          return;
+        }
+
+        const short = data.short_url || data.url;
+        shortLink.textContent = short;
+        shortLink.href = short;
+        result.style.display = 'block';
+
+      } catch (e) {
+        error.textContent = 'Could not reach the server.';
+        error.style.display = 'block';
+      }
+    }
+
+    document.getElementById('urlInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') shorten();
+    });
+  </script>
+</body>
+</html>
