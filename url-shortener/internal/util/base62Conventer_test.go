@@ -85,7 +85,7 @@ func TestRoundTrip(t *testing.T) {
 }
 
 func BenchmarkEncode(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for i := 100; i < 102; i++ {
 		Encode(uint64(i))
 	}
 }

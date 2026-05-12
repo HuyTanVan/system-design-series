@@ -63,10 +63,7 @@ func (c *Client) Ping(ctx context.Context) error {
 	return c.rdb.Ping(ctx).Err()
 }
 
-// ── Cache-aside helpers ───────────────────────────────────────────────────────
-
-// Get retrieves a string value. Returns ("", nil) on a cache miss so callers
-// can distinguish between "not found" and a real error.
+// Cache
 func (c *Client) Get(ctx context.Context, key string) (string, error) {
 	val, err := c.rdb.Get(ctx, key).Result()
 	if err == redis.Nil {
@@ -75,17 +72,18 @@ func (c *Client) Get(ctx context.Context, key string) (string, error) {
 	return val, err
 }
 
-// Set stores a key-value pair with an optional TTL (0 = no expiry).
 func (c *Client) Set(ctx context.Context, key, value string, ttl time.Duration) error {
+	if ttl <= 0 {
+		ttl = 24 * time.Hour // default TTL to prevent permanent cache entries
+	}
 	return c.rdb.Set(ctx, key, value, ttl).Err()
 }
 
-// Delete removes one or more keys. Silently ignores missing keys.
 func (c *Client) Delete(ctx context.Context, keys ...string) error {
 	return c.rdb.Del(ctx, keys...).Err()
 }
 
-// ── Atomic counter (Base62 source) ───────────────────────────────────────────
+// Atomic global counter (Base62 source)
 
 // Increment atomically increments a counter key and returns the new value.
 // This is the Redis-native replacement for Postgres BIGSERIAL — the service

@@ -26,7 +26,7 @@ type UrlShortenRequest struct {
 	TTLDays int    `json:"ttl_days"`
 }
 
-// POST api/url/shorten
+// POST /urls
 func (h *Handler) Shorten(c *gin.Context) {
 	var req UrlShortenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -52,7 +52,7 @@ func (h *Handler) Shorten(c *gin.Context) {
 	c.JSON(http.StatusCreated, resp)
 }
 
-// GET /:code
+// GET /urls/:code
 func (h *Handler) Redirect(c *gin.Context) {
 	code := c.Param("code")
 
@@ -70,7 +70,7 @@ func (h *Handler) Redirect(c *gin.Context) {
 		return
 	}
 
-	go h.store.RecordClick(url.ID, c.ClientIP(), c.Request.UserAgent(), c.Request.Referer())
+	// go h.store.RecordClick(url.ID, c.ClientIP(), c.Request.UserAgent(), c.Request.Referer())
 
 	c.Redirect(http.StatusMovedPermanently, url.Original)
 }

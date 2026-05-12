@@ -15,9 +15,8 @@ func NewRouter(s *store.Store, cfg *config.Config) *gin.Engine {
 
 	h := NewHandler(s, cfg.BaseURL, cfg.DefaultTTLDays)
 
-	r.StaticFile("/", "./ui/index.html") // serve UI (optional)
-
-	r.POST("/shorten", h.Shorten)
+	r.StaticFile("/", "./ui/index.html")
+	r.POST("/urls", h.Shorten)
 	r.GET("/stats/:code", h.Stats) // must be before /:code
 	r.GET("/:code", h.Redirect)
 

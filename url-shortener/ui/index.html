@@ -31,20 +31,42 @@
       color: #111;
     }
 
-    input {
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #444;
+    }
+
+    .field input {
       width: 100%;
-      padding: 12px 14px;
+      padding: 10px 14px;
       border: 1px solid #ddd;
       border-radius: 6px;
       font-size: 0.95rem;
       outline: none;
-      margin-bottom: 12px;
     }
 
-    input:focus { border-color: #4f46e5; }
+    .field input:focus { border-color: #4f46e5; }
+
+    .ttl-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ttl-wrap input { width: 100px; }
+    .ttl-wrap span { font-size: 0.9rem; color: #666; }
 
     button {
       width: 100%;
+      margin-top: 8px;
       padding: 12px;
       background: #4f46e5;
       color: white;
@@ -63,12 +85,19 @@
       border: 1px solid #bbf7d0;
       border-radius: 6px;
       display: none;
+      font-size: 0.9rem;
     }
 
     .result a {
       color: #16a34a;
       font-weight: 600;
       word-break: break-all;
+    }
+
+    .result .expires {
+      margin-top: 4px;
+      color: #666;
+      font-size: 0.85rem;
     }
 
     .error {
@@ -87,12 +116,29 @@
   <div class="box">
     <h1>🔗 URL Shortener</h1>
 
-    <input type="text" id="urlInput" placeholder="Paste your long URL here..." />
-    <input type="text" id="aliasInput" placeholder="Custom alias (optional)" />
+    <div class="field">
+      <label>URL</label>
+      <input type="text" id="urlInput" placeholder="https://example.com/long/url" />
+    </div>
+
+    <div class="field">
+      <label>Alias <span style="color:#999;font-weight:400">(optional)</span></label>
+      <input type="text" id="aliasInput" placeholder="my-link" />
+    </div>
+
+    <div class="field">
+      <label>Expiry <span style="color:#999;font-weight:400">(optional)</span></label>
+      <div class="ttl-wrap">
+        <input type="number" id="ttlInput" placeholder="30" min="1" />
+        <span>days</span>
+      </div>
+    </div>
+
     <button onclick="shorten()">Shorten</button>
 
     <div class="result" id="result">
       Short URL: <a id="shortLink" href="#" target="_blank"></a>
+      <div class="expires" id="expiresAt"></div>
     </div>
 
     <div class="error" id="error"></div>
@@ -101,9 +147,12 @@
   <script>
     async function shorten() {
       const url = document.getElementById('urlInput').value.trim();
+      const alias = document.getElementById('aliasInput').value.trim();
+      const ttl = document.getElementById('ttlInput').value.trim();
       const result = document.getElementById('result');
       const error = document.getElementById('error');
       const shortLink = document.getElementById('shortLink');
+      const expiresAt = document.getElementById('expiresAt');
 
       result.style.display = 'none';
       error.style.display = 'none';
@@ -115,11 +164,11 @@
       }
 
       try {
-        const alias = document.getElementById('aliasInput').value.trim();
         const body = { url };
         if (alias) body.alias = alias;
+        if (ttl) body.ttl_days = parseInt(ttl);
 
-        const resp = await fetch('/url', {
+        const resp = await fetch('/urls', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
@@ -128,7 +177,9 @@
         const data = await resp.json();
 
         if (!resp.ok) {
-          error.textContent = data.message || 'Something went wrong.';
+          error.textContent = resp.status === 409
+            ? 'Alias already in use.'
+            : (data.error || 'Something went wrong.');
           error.style.display = 'block';
           return;
         }
@@ -136,6 +187,10 @@
         const short = data.short_url || data.url;
         shortLink.textContent = short;
         shortLink.href = short;
+        expiresAt.textContent = data.expires_at
+          ? `Expires: ${new Date(data.expires_at).toLocaleDateString()}`
+          : 'No expiry';
+
         result.style.display = 'block';
 
       } catch (e) {

@@ -32,14 +32,14 @@ type URL struct {
 	CreatedAt time.Time
 }
 
-type Click struct {
-	ID        int64
-	URLID     int64
-	IP        *string
-	UserAgent *string
-	Referer   *string
-	CreatedAt time.Time
-}
+// type Click struct {
+// 	ID        int64
+// 	URLID     int64
+// 	IP        *string
+// 	UserAgent *string
+// 	Referer   *string
+// 	CreatedAt time.Time
+// }
 
 type ClickSummary struct {
 	Total       int64      `json:"total"`
@@ -81,10 +81,11 @@ type ShortenResponse struct {
 	CreatedAt time.Time  `json:"created_at"`
 }
 
+// handle shortening logic
 func (s *Store) Shorten(ctx context.Context, baseURL string, req ShortenRequest) (*ShortenResponse, error) {
 	url := &URL{Original: req.Original}
 
-	// Resolve TTL
+	// 1. set TTL
 	ttlDays := req.TTLDays
 	if ttlDays == 0 {
 		ttlDays = req.DefaultTTLDays
@@ -94,7 +95,7 @@ func (s *Store) Shorten(ctx context.Context, baseURL string, req ShortenRequest)
 		url.ExpiresAt = &t
 	}
 
-	// Check alias availability
+	// 2. validate alias (if provided) and check for conflicts
 	if req.Alias != "" {
 		existing, err := s.getByAlias(ctx, req.Alias)
 		if err != nil && !errors.Is(err, ErrNotFound) {
@@ -106,7 +107,10 @@ func (s *Store) Shorten(ctx context.Context, baseURL string, req ShortenRequest)
 		url.Alias = &req.Alias
 	}
 
-	// Atomic counter → Base62 code
+	// Approach 1: random code, need loop to check for collisions
+	// url.Code = util.RandomCode(6)
+
+	// Approach 2: Atomic global counter→ Base62 code
 	seq, err := s.cache.Increment(ctx, counterKey)
 	if err != nil {
 		return nil, fmt.Errorf("increment counter: %w", err)
@@ -118,7 +122,7 @@ func (s *Store) Shorten(ctx context.Context, baseURL string, req ShortenRequest)
 	if err != nil {
 		return nil, fmt.Errorf("create url: %w", err)
 	}
-
+	fmt.Println(created)
 	// Prime cache
 	s.setCache(ctx, created)
 
@@ -137,11 +141,11 @@ func (s *Store) Shorten(ctx context.Context, baseURL string, req ShortenRequest)
 	}, nil
 }
 
-// ── Resolve ───────────────────────────────────────────────────────────────────
-
+// resolve
 func (s *Store) Resolve(ctx context.Context, code string) (*URL, error) {
 	// Cache hit
 	if val, err := s.cache.Get(ctx, cachePrefix+code); err == nil && val != "" {
+		fmt.Println("HIT CACHE")
 		return &URL{Code: code, Original: val}, nil
 	}
 
@@ -163,6 +167,8 @@ func (s *Store) Resolve(ctx context.Context, code string) (*URL, error) {
 	}
 
 	s.setCache(ctx, url)
+
+	fmt.Println("MISS CACHE -> HIT DB")
 	return url, nil
 }
 
@@ -199,8 +205,7 @@ func (s *Store) GetStats(ctx context.Context, code string) (*URL, *ClickSummary,
 	return url, &summary, nil
 }
 
-// ── Private helpers ───────────────────────────────────────────────────────────
-
+// Private Database operations
 func (s *Store) createURL(ctx context.Context, url *URL) (*URL, error) {
 	const q = `
 		INSERT INTO urls (code, original, alias, expires_at)

@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"math/rand"
 	"strings"
 )
 
@@ -14,6 +15,15 @@ var (
 	ErrInvalidCode = errors.New("base62: invalid character in code")
 	ErrEmptyCode   = errors.New("base62: code must not be empty")
 )
+
+// Easiest way to generate a random custom-length code.
+func RandomCode(length int) string {
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = alphabet[rand.Intn(len(alphabet))]
+	}
+	return string(b)
+}
 
 // Encode converts a positive integer (e.g. a Postgres BIGSERIAL value)
 // into a Base62 string. Encode(1) → "1", Encode(62) → "a0".
@@ -31,12 +41,10 @@ func Encode(n uint64) string {
 		buf = append(buf, alphabet[n%base])
 		n /= base
 	}
-
 	// Digits were appended least-significant-first; reverse in place.
 	for i, j := 0, len(buf)-1; i < j; i, j = i+1, j-1 {
 		buf[i], buf[j] = buf[j], buf[i]
 	}
-
 	return string(buf)
 }
 
