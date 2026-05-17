@@ -143,7 +143,7 @@ func (ac *AutoComplete) Build(path string) error {
 	for k, v := range processedData {
 		// // this piece  of code is to reduce size of the trie
 		// // by only choosing high frequency queries
-		if v < 50 {
+		if v < 10 {
 			continue
 		}
 		// -------------------
