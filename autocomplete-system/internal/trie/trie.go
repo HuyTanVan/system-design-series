@@ -141,9 +141,13 @@ func (ac *AutoComplete) Build(path string) error {
 
 	// 2. Build Trie based on processed K-V data
 	for k, v := range processedData {
-		// if v < 5 {
-		// 	continue
-		// }
+		// // this piece  of code is to reduce size of the trie
+		// // by only choosing high frequency queries
+		if v < 50 {
+			continue
+		}
+		// -------------------
+		//
 		ac.insert(k, v)
 	}
 	return nil
