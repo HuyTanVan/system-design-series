@@ -31,7 +31,7 @@ func (h *Handler) Search(c *gin.Context) {
 	}
 
 	results := h.Trie.Search(q)
-	fmt.Printf("Trie size: %d bytes\n", h.Trie.TrieSize())
+	// fmt.Printf("Trie size: %d bytes\n", h.Trie.TrieSize())
 	// // total trie memory
 	// total := trie.CalculateNodeSize(h.Trie.Root) // recursive version
 	// fmt.Printf("Total trie: %s\n", formatBytes(total))
