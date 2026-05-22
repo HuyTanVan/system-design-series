@@ -31,6 +31,15 @@ A URL shortener with click analytics, custom aliases, and TTL-based expiry.
 
 [URL Shortener](./url-shortener)
 
+---
+
+### Rate Limiter
+A distributed rare limiting system which controls how many requests a client can make within a specific timeframe.
+
+[Rate Limiter](./rate-limiter)
+
+---
+
 ### Load Balancer
 Traffic distribution system with multiple routing strategies.
 
