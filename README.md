@@ -12,7 +12,7 @@ Each project focuses on:
 
 ## Projects
 
-### Redis System
+### Redis Lite
 In-memory key-value store with TTL, LRU eviction, AOF persistence, and concurrent clients.
 
 [Redis System](./redis-system)
