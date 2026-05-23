@@ -4,8 +4,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -35,7 +33,6 @@ type Config struct {
 }
 
 func Load() *Config {
-	godotenv.Load()
 	return &Config{
 		// Server
 		APIPort: getEnv("API_PORT", ":8080"),
