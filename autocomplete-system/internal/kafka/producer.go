@@ -21,9 +21,15 @@ func NewProducer(bootstrapServer, apiKey, apiSecret, topic string) *Producer {
 	writer := &kafka.Writer{
 		Addr:  kafka.TCP(bootstrapServer),
 		Topic: topic,
+		// Transport: &kafka.Transport{
+		// 	SASL: mechanism,
+		// 	TLS:  &tls.Config{},
+		// },
 		Transport: &kafka.Transport{
 			SASL: mechanism,
-			TLS:  &tls.Config{},
+			TLS: &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			},
 		},
 	}
 

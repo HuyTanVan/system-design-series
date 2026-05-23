@@ -33,7 +33,7 @@ Design a search autocomplete (typeahead) system that serves top K suggestions as
 5. **Stale data is acceptable** — suggestions can be up to 24 hours old (batch updates)
 
 ### Capacity Estimation
-- 100M DAU × 10 searches/day = ~1,150 QPS average
+- 100M DAU × 10 searches/day = ~11,574 QPS average
 - ~4-5x peak multiplier → **~50,000 QPS peak** 
 
 ---
@@ -132,12 +132,12 @@ Body: { "text": "some text" }
 **Approach 1: Background job serializes full trie → S3**
 - A seperate machine does all the heavy computation (aggregate + build + serialize)
 - Trie servers only deserialize and swap
-- Pro: Less CPU load and memory usage on production trie servers
+- Pros: Less CPU load and memory usage on production trie servers
 
 **Approach 2: Background job outputs key-value (phrase: frequency) → S3**
 - Trie servers download key-value data and build trie themselves
-- Pro: Smaller S3 payload, trie build logic stays in one place
-- Con: Each of N trie servers builds the trie independently — N times the CPU cost
+- Pros: Smaller S3 payload, trie build logic stays in one place
+- Cons: Each of N trie servers builds the trie independently — N times the CPU cost
 
 **I implmented Approach 1**
 
