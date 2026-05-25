@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to deserialize trie: %v", err)
 	}
-	log.Printf("trie deserialized successfully | nodes=%d", ac.GetNumNodes())
+	log.Printf("trie deserialized successfully | nodes=%d | size=%dB", ac.GetNumNodes(), ac.TrieSize())
 
 	// 3. start background poller
 	workers.StartPoller(ac, cfg.SnapshotPath, cfg.S3Bucket, cfg.S3Key, cfg.S3Region, cfg.RebuildInterval)
