@@ -7,6 +7,8 @@ import (
 	"autocomplete/internal/kafka"
 	"autocomplete/workers"
 	"log"
+	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -56,5 +58,14 @@ func main() {
 	api.SetupRoutes(r, h)
 
 	log.Printf("API server running on %s", cfg.APIPort)
+
+	// auto ping to keep server alive on render
+	go func() {
+		for {
+			http.Get("https://system-design-series-autocomplete.onrender.com/")
+			time.Sleep(10 * time.Minute)
+		}
+	}()
 	r.Run(cfg.APIPort)
+
 }
