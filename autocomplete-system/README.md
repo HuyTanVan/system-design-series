@@ -2,7 +2,7 @@
 
 ## Overview
 Design a search autocomplete (typeahead) system that serves top K suggestions as users type, supporting 100M DAU and 50,000 QPS at peak.
-
+Live Demo: https://system-design-series-autocomplete.onrender.com/
 > Autocomplete is also commonly known as predictive search, type-ahead, or auto-suggest, provides real-time suggestions to users as they type in search boxes. The system must efficiently return top-k relevant and popular suggestions based on historical query data for each prefix input.
 
 <div style="margin-left:3rem">
@@ -165,6 +165,6 @@ Body: { "text": "some text" }
 ---
 
 # Resrouces
-[AOL Dataset i use(the dataset includes sensitive words/phrases)][https://www.kaggle.com/datasets/dineshydv/aol-user-session-collection-500k/suggestions]
+- The AOL Dataset i used (the dataset includes sensitive words/phrases)[https://www.kaggle.com/datasets/dineshydv/aol-user-session-collection-500k/suggestions]
 
 ---
