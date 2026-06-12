@@ -33,7 +33,7 @@ Design a file storage and synchronization system (like **Dropbox**) where users 
 |--------|--------|
 | **User** | `userID` (pk) |
 | **File** | `content` (byte) |
-| **Metadata** | `fileID` (pk), `name` (varchar), `size` (int), `uploadedBy` (userID), `mimeType` (varchar) |
+| **Metadata** | `fileID` (pk), `name` (varchar), `size` (int), `uploadedBy` (userID),`mimeType` (varchar) |
 
 ---
 
@@ -84,67 +84,88 @@ Body: {
 
 
 ### Where to store the FileMetadata?
-- There are relationships between User, File, FileMetadata, so can choose PostgreSQL
+- There are relationships between User, File, FileMetadata, so can choose relational database like PostgreSQL
 
 ### Where to store File (actual byte)?
+
 #### Approach 1: Store in the primary server (Bad)
 - Users upload files, then file contents as byte are stored in primary server while file's metadata is stored in database like PostgreSQL.
-- Workflow: Users -> API gateway -> File Service(store File) -> PostgreSQL(store Metadata)
+- Workflow: Users -> API gateway -> File Service(stores File) -> PostgreSQL(stores Metadata)
 - Pros: Simple, fine for small application
-- Cons: Won't scale well, bad secure.
+- Cons: Doesn't scale well with file size; single point of failure for both compute and storage
 
-#### Approach 2: Blob Storage (Good)
-- Use an external storage system like AWS S3, Google Cloud Storage, ...
+#### Approach 2: Blob Storage via Backend (Good)
+- Use an external object storage system like AWS S3, Google Cloud Storage, ...
 - Workflow: Users -> API gateway -> File Service 
-                                    ├─> PostgreSQL (metadata)
-                                    └─> S3 (files)                           
-- Pros: Scale well
-- Cons: Raise more complexity(need to handle cases when metadata is saved to DB, but failed to upload to Blob Storage) -> solved by transactional approach. Redundant upload(user -> backend, backend -> Blob Storage) -> solved by Approach 3.
+                                    ├─> PostgreSQL (stores metadata)
+                                    └─> S3 (stores file bytes)                           
+- Pros: Storage scales well because it is external.    
+- Cons: Wastes bandwith and adds latency(Redundant uploads: client -> server -> S3); raises more complexity(need to handle cases when metadata is saved to DB, but failed to upload to Blob Storage) -> solved by transactional approach.-> solved by Approach 3.
 
-#### Approach 3: Blob Storage direct upload.
+#### Approach 3: Blob Storage direct upload via presigned URLs (Best)
 - Allow the user to upload a file directly to Blob Storage using **presigned URLs**
-> Presigned URLs is a URL that the user can use to upload the file directly to the Blob Storage service without going via backend.
-- Workflow: Users -> API gateway -> File Service 
-            |                        ├─> PostgreSQL (metadata)
-            └─> S3 (files)                           
-- Pros: handling large file transfers efficiently.
+- Workflow:
+  - User -> File Service -> PostgreSQL (write metadata to DB, get and issue presigned URL to user)
+  - User -> S3 (upload file directly using the presigned URL)
+> Presigned URLs is a URL that the user can use to upload the file directly to the Blob Storage service without going via backend.                  
+- Pros: Handles large file transfers efficiently; reduces backend workload, it only handles metadata.
 
 ### 2. Users should be able to download files from any device.
 
-#### Approach 1: Download through File Service(server) (bad)
-- Workflow: User sends a download request, File Service downloads the file from S3, User downloads the file from File Service.
-- Pros: dont think there is one
-- Cons: Duplicate download(File Service <- S3, User <- File Service)        
+#### Approach 1: Download through File Service(server) (Bad)
+- Workflow: User sends a download request, File Service downloads the file from S3, then serves it to the user.
+- Cons: Redundant download(File Service <- S3, User <- File Service) -> Wastes bandwith and adds latency      
 
 #### Approach 2: Download directly from Blob storage (Good)
-- Allow the user to download a file directly from Blob Storage using **presigned URLs**
-- Pros: Fast, safe.
-- Cons: Not optimal for users who are far away from Blob Storage server.
+- File Service issues a presigned URL, the client uses the URL to download directly from S3.
+- Pros: Fast, no backend bottleneck..
+- Cons: Not optimal for users who are far away from Blob Storage server(geographical issue).
 > Solution: Approach 3 using CDN to cache file
 
 #### Approach 3: Download from CDN (optimization for Approach 2 -> Best)
-- A CDN is a network of servers distributed across the globe that cache files and serve them to users from the server closest to them
-- Pros: Fast for any user in any part of the world
-- Cons: Expensive.
+- Cache and serve file content at locations close to users.
+- Pros: Fast for any user in anywhere in the world
+- Cons: CDN is expensive
 
 ### 3. Users should be able to share files with other users and view the files shared with them.
 
-#### Approach 1: Add a sharelist to Metadata(bad)
-- a user expects to see their own files and files shared with them. Getting the list of their files is easy and can be optimized by using index on **uploadedBy**. However, getting the list of files shared with them is very slow(need to scan the **sharelist** of every file to see if user is in it)
+#### Approach 1: Add a sharelist to Metadata(Bad)
+- a user expects to see their own files and files shared with them. Getting the list of their files is easy and can be optimized by using index on **uploadedBy**. However, getting the list of files shared with them is very slow(need to scan the **sharelist** of every file to see if user is in it -> N+1 Problem)
 
-#### Approach 2: Cache files shared for each user.
+#### Approach 2: Cache files shared for each user using in-memory hashmap.
 - user1 : [file1, file2, file3], user2: [file2, file5, file7], ...
-- pros: fetching the Sharelist faster, simple key:value
-- cons: raise a bit complexity(need to keep the Sharelist in cache in sync with the file metadata in database) -> solved by using a transaction(update both in cache and database the same)
+- Pros: fetches the Sharelist faster, simple key:value
+- Cons: increases memory pressure at scale; adds a bit complexity(need to keep the Sharelist in cache in sync with the file metadata in database) -> solved by using a transaction(update both in cache and database the same)
 
 #### Approach 3: Create a new database table for shared files.
-- userID | fileID
-- pros: simpler(no need to handle sync for map and database), query speed can be improved using indexing database.
-- cons: slower than cache a bit
-> Approach 2 and 3 is negotiable in different usecases, can be combined to bring the best solution.
+- A table of `(userID, fileID)` pairs, indexed on `userID`.
+- Pros: simpler(no need to handle sync for hashmap and database); scales with the database; query speed improved improved using indexing database.
+- cons: slightly lower than inmemory cache
+> Approaches 2 and 3 aren't mutually exclusive — a cache can sit in front of the table depending on read volume and scale.
 
----
+### 3. Users can automatically sync files acress devices.
+- Workflow: user(local) -sync-> remote(Blog storage), remote(Blog storage) -syn-> user(other devices)
 
-### Future Improvements
+- **Local -> Remote**: When a user updates a file on their local device, the changes needs to be synced with the remote server.
+- Approach: client side sync agent.
+- 1. Monitors the local Dropbox folder for changes using OS file system events(like Apple File System on IOS, FileSystemWatcher on Windows or FSEvents on macOS).
+- 2. when any changes is detected, push the modified file to a queue.
+- 3. Sends changes to the server along with updated metadate using upload API.
+- 4. If 2 users edit the same file, it causes confict -> resolved by "last write wins" stategy(the most recent update will be saved)
 
----
+- **Remote -> Local**: Other devices need to know what changes happend in the remote server as fast as possible, so they can pull down those changes
+- **Approach 1**: polling
+- Client periodically checks the server if there is any changes since last sync. The server queries the database to check if any files user is watching has a **updatedAt** timestamp that is newer than the last time they synced.
+- Pros: Simple
+- Cons: slower to detect changes; wastes bandthwith if nothing has changed.
+
+- **Approach 2**: WebSocket
+- Each client maintains an open connection to the server, the server pushes notifications when changes occur.
+- Pros: Real-time update
+- Cons: more complex to implement; higher server resource usage
+
+- Approach 3: Hybrid (polling + Websocket)
+- Websocket as a real-time sync agent: Each client maintains a single WebSocket connection to the server(one per device), any changes will be pushed to the server through this connection -> real-time sync for any file change.
+- Polling as a reliable fallback: Websocket sometimes is not reliable, connection can drop and messages can be lost -> solved by Periodic polling(eg: every 5 minutes), The client periodically poll the server to catch any changes it have missed, ensuring eventual consistency even if Websocket connection is temporarily interupted.
+
+### 4. How to handle large file upload?
