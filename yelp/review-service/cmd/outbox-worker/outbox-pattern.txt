@@ -1,0 +1,74 @@
+Outbox Pattern
+
+What is it?
+The Outbox Pattern is a technique for reliably sending events from a database to another system when you cannot use one transaction across both systems.
+
+Why do we need it?
+
+Suppose:
+
+PostgreSQL → Elasticsearch
+
+You update PostgreSQL and then Elasticsearch:
+
+1. Update PostgreSQL      ✅
+2. Update Elasticsearch   ❌
+
+Now PostgreSQL and Elasticsearch are inconsistent.
+
+You can't normally make both operations part of one atomic transaction.
+
+How does Outbox solve it?
+
+Instead of directly updating Elasticsearch, you first save an event in an outbox table in PostgreSQL.
+
+BEGIN
+    Update business
+    Insert "BusinessUpdated" into outbox
+COMMIT
+
+Because both operations are in the same PostgreSQL transaction, the database change and event are committed together.
+
+Then a background worker:
+
+Outbox Table
+     ↓
+Worker
+     ↓
+Elasticsearch
+
+The worker finds unprocessed events and sends them to Elasticsearch.
+
+If Elasticsearch fails:
+
+PostgreSQL       ✅
+Outbox event     ✅
+Elasticsearch    ❌
+
+The event stays in the outbox and can be retried later.
+
+Main benefits
+Reliable event delivery
+Prevents events from being lost
+Supports retry
+Keeps systems eventually consistent
+Decouples the database from downstream services
+Avoids needing a distributed transaction
+One sentence to remember
+
+The Outbox Pattern stores a database change and its corresponding event in the same transaction, then asynchronously processes the event with a worker to reliably update downstream systems.
+
+Your Yelp example
+Client
+  ↓
+Review/Business Service
+  ↓
+PostgreSQL
+  ├── businesses
+  └── outbox_events
+          ↓
+      Worker
+          ↓
+   Elasticsearch
+
+Important: Outbox does not make PostgreSQL and Elasticsearch atomic. It gives you reliable eventual consistency.
