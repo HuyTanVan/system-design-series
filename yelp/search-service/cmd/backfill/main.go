@@ -1,0 +1,101 @@
+package main
+
+import (
+	"context"
+	"log"
+	"os"
+
+	"github.com/HuyTanVan/yelp-clone/search-service/internal/es"
+	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+func main() {
+	ctx := context.Background()
+
+	businessesDSN := os.Getenv("BUSINESSES_DB_DSN")
+	if businessesDSN == "" {
+		businessesDSN = "postgres://yelp:yelp@localhost:5432/businesses_db"
+	}
+	esURL := os.Getenv("ELASTICSEARCH_URL")
+	if esURL == "" {
+		esURL = "http://localhost:9200"
+	}
+
+	pool, err := pgxpool.New(ctx, businessesDSN)
+	if err != nil {
+		log.Fatalf("failed to connect to businesses db: %v", err)
+	}
+	defer pool.Close()
+
+	esClient, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{esURL}})
+	if err != nil {
+		log.Fatalf("failed to create es client: %v", err)
+	}
+
+	if err := es.EnsureIndex(ctx, esClient); err != nil {
+		log.Fatalf("failed to ensure index: %v", err)
+	}
+
+	// pull businesses along with their categories, aggregated into an array
+	rows, err := pool.Query(ctx, `
+		SELECT b.id, b.name, b.city, b.state, ST_Y(b.location::geometry) AS latitude, ST_X(b.location::geometry) AS longitude, b.avg_rating, b.review_count,
+		       COALESCE(array_agg(c.name) FILTER (WHERE c.name IS NOT NULL), '{}') AS categories
+		FROM businesses b
+		LEFT JOIN business_categories bc ON bc.business_id = b.id
+		LEFT JOIN categories c ON c.id = bc.category_id
+		GROUP BY b.id, b.name, b.city, b.state, b.location, b.avg_rating, b.review_count
+	`)
+	if err != nil {
+		log.Fatalf("failed to query businesses: %v", err)
+	}
+	defer rows.Close()
+
+	count := 0
+	failed := 0
+	batch := make([]es.BusinessDoc, 0, 1000)
+
+	flush := func() {
+		if len(batch) == 0 {
+			return
+		}
+		if err := es.BulkIndexBusinesses(ctx, esClient, batch); err != nil {
+			log.Printf("bulk index failed for batch of %d: %v", len(batch), err)
+			failed += len(batch)
+		} else {
+			count += len(batch)
+		}
+		batch = batch[:0]
+	}
+
+	for rows.Next() {
+		var doc es.BusinessDoc
+		var latitude, longitude float64
+
+		if err := rows.Scan(&doc.ID, &doc.Name, &doc.City, &doc.State, &latitude,
+			&longitude, &doc.AvgRating, &doc.ReviewCount, &doc.Categories); err != nil {
+			log.Printf("failed to scan row: %v", err)
+			failed++
+			continue
+		}
+		doc.CityState = doc.City + ", " + doc.State
+		doc.Location = es.Location{
+			Lat: latitude,
+			Lon: longitude,
+		}
+		batch = append(batch, doc)
+		// log.Printf(
+		// 	"business=%s lat=%f lon=%f",
+		// 	doc.ID,
+		// 	doc.Location.Lat,
+		// 	doc.Location.Lon,
+		// )
+		if len(batch) >= 1000 {
+			flush()
+			log.Printf("indexed %d businesses so far...", count)
+		}
+	}
+	flush() // index whatever's left in the final partial batch
+
+	log.Printf("backfill complete: %d indexed, %d failed", count, failed)
+}

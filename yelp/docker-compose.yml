@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: yelp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: yelp
+      POSTGRES_PASSWORD: yelp
+      POSTGRES_DB: postgres   # default db, we create businesses_db/reviews_db via init script
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ./schema:/schema
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yelp"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+      image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+      container_name: yelp-elasticsearch
+      restart: unless-stopped
+      environment:
+        - discovery.type=single-node
+        - xpack.security.enabled=false
+        - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      ports:
+        - "9200:9200"
+      volumes:
+        - es_data:/usr/share/elasticsearch/data
+      healthcheck:
+        test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+        interval: 30s
+        timeout: 5s
+        retries: 10
+
+volumes:
+  pgdata:
+  es_data:
