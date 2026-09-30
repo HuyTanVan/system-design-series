@@ -33,24 +33,11 @@ A URL shortener with click analytics, custom aliases, and TTL-based expiry.
 
 ---
 
-### Rate Limiter
-A distributed rare limiting system which controls how many requests a client can make within a specific timeframe.
+### Yelp
+A URL shortener with click analytics, custom aliases, and TTL-based expiry.
 
-[Rate Limiter](./rate-limiter)
-
----
-
-### Load Balancer
-Traffic distribution system with multiple routing strategies.
-
-[Load Balancer](./load-balancer)
-
----
-
-### Caching System
-Implementation of caching strategies used in distributed systems.
-
-[Caching System](./caching-system)
+[Yelp](./yelp)
+A location-based business discovery platform where users can search for nearby businesses, read reviews, leave ratings, and share their experiences
 
 ---
 
