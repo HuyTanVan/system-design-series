@@ -34,10 +34,9 @@ A URL shortener with click analytics, custom aliases, and TTL-based expiry.
 ---
 
 ### Yelp
-A URL shortener with click analytics, custom aliases, and TTL-based expiry.
+A location-based business discovery platform where users can search for nearby businesses, read reviews, leave ratings, and share their experiences
 
 [Yelp](./yelp)
-A location-based business discovery platform where users can search for nearby businesses, read reviews, leave ratings, and share their experiences
 
 ---
 
