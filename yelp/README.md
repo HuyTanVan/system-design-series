@@ -2,15 +2,20 @@
 
 ## Overview
 
-Design a distributed Yelp-like platform that enables users to discover local businesses, search for restaurants and services, write reviews, and view business ratings at scale.
+Design a Yelp-like platform that enables users to discover local businesses, search for restaurants and services, write reviews, and view business ratings at scale.
 
-> Yelp is a location-based business discovery platform where users can search for nearby businesses, read reviews, leave ratings, and share their experiences. This project explores the backend architecture behind building such a system using microservices, asynchronous messaging, distributed search, caching, and scalable data storage.
+> Yelp is a location-based business discovery platform where users can search for nearby businesses, read reviews, leave ratings, and share their experiences. This project explores the backend architecture behind building such a system using microservices, asynchronous messaging, distributed search and caching.
 
 ---
 
 ## Architecture Summary
 
-> *(Architecture diagram here)*
+
+## Architecture Summary
+
+<div style="margin-left:3rem">
+    <img src="./images/full-architecture.png" alt="UI" width="1000">
+</div>
 
 ---
 
@@ -23,7 +28,7 @@ Design a distributed Yelp-like platform that enables users to discover local bus
 
 ### Non-Functional Requirements
 1. **Latency** — low latency for search operations (< 500ms)
-2. **Scalability** — support 100M DAU, 10M bussinesses (down to 1.5M U and 150k B = 66.7x)
+2. **Scalability** — support 100M DAU, 10M bussinesses
 3. **High availability** — system should be highly available, prioritizing availability over consistency
 
 ### Capacity Estimation
@@ -33,7 +38,7 @@ Design a distributed Yelp-like platform that enables users to discover local bus
 - Users mostly search/view business, but rarely leave reviews -> Read/write ratio: **1000:1** (read-heavy)
 
 **Traffic**
-- Read: 100M DAU x 3 searchs/user/day = ~ 3472 QPS on average
+- Read: 100M DAU x 3 searchs/user/day = ~3472 QPS on average
 - Write: 3472 / 1000 = ~3 WPS one average 
 
 
@@ -132,27 +137,30 @@ Body: {
 ### Approach 3: Using Elasticsearch
 
 - Pros: great at scale, 
-- Cons: Inconsistency between ES and primary DB -> Change Data Capture (CDC)
+- Cons: Inconsistency between ES and primary DB -> Change Data Capture (CDC) or Outbox Pattern
 
 ## How to efficiently calculate and update the average rating for businesses to ensure it's readily available in search results?
 
 ### Approach 1: Calculate the average when we need (Bad solution)
-- simply create a query that joins businesses and reviews table.
+- Simply create a query that joins businesses and reviews table.
 - Pros: Simple, no extra infra cost.
 - Cons: JOIN sql becomes bottleneck, unnecessary recalculation, slowdown other read operations in db.
 
 ### Approach 2: Periodical update with worker
 - add new avg_rating column on business -> worker precomputates avg_rating every 1h, 1d, etc -> update avg_rating.
-Pros: avg_rating comes with bussiness on query.
-- Cons: not real time
+- Pros: avg_rating comes with bussiness on query.
+- Cons: not real time, unnecessary computation.
 
 ### Approach 3: Outbox pattern
-- User posts a review → review-service saves it
-Same transaction → also inserts a row into review_outbox (unprocessed)
-API responds instantly → user doesn't wait for anything else
-Worker polls every 5s → finds unprocessed rows, recalculates the business's average rating, sends it to listings-service via HTTP
-listings-service updates the rating, worker marks row processed → done, business now shows the new rating
+- Outbox Pattern is a technique to reliably update your database and publish an event when you can't put both operations into the same transaction.
+- Since we have 2 seperate databases **businesses** and **reviews** and can't atomically create a review and update business average rating in a transaction -> Outbox Pattern provides eventual consistency betwwen them.
 
+- Workflow: 
++ User posts a review → review-service saves + inserts a row into review_outbox(processed=false) in the same transaction -> API responds instantly.
++ A worker polls every 5s → finds unprocessed rows, recalculates the business's average rating, sends it to listings-service via HTTP listings-service updates the rating, worker marks row processed → done, business now shows the new rating.
+
+- Pros: high reliability(review + outbox event are commited atomically, workers process later)
+- Cons: Eventual Consistency(brief stale-rating window), extra complexity(outbox + worker)
 
 
 # Resources
